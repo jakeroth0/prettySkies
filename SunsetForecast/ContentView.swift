@@ -3,93 +3,121 @@ import CoreLocation
 
 struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
-    @State private var sunset: Sunset?
-    @State private var isLoading = false
-    @State private var error: Error?
     @EnvironmentObject private var sunsetService: MockSunsetService
-    
+
+    @State private var sunsetTime: String?
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         ZStack {
-            // Background gradient
             LinearGradient(
-                gradient: Gradient(colors: [.blue, .purple]),
+                gradient: Gradient(colors: [
+                    Color(hex: "#FF6B5C"),
+                    Color(hex: "#FFB35C"),
+                    Color(hex: "#FFD56B")
+                ]),
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-            
-            VStack {
-                if let error = error {
-                    Text("Error: \(error.localizedDescription)")
+
+            VStack(spacing: 16) {
+                if let errorMessage = errorMessage {
+                    Text("Error: \(errorMessage)")
                         .foregroundColor(.white)
                 } else if isLoading {
-                    Text("Loading...")
+                    Text("Loading…")
                         .foregroundColor(.white)
                 } else if locationManager.coordinate == nil {
-                    Text("Waiting for location...")
+                    Text("Waiting for location…")
                         .foregroundColor(.white)
-                } else if let sunset = sunset {
-                    VStack(spacing: 20) {
-                        Text("Sunset Quality")
-                            .font(.largeTitle)
-                            .foregroundColor(.white)
-                        
-                        Text(sunset.quality)
-                            .font(.title)
-                            .foregroundColor(.white)
-                        
-                        Text("Time: \(sunset.time)")
-                            .foregroundColor(.white)
-                    }
+                } else if let time = sunsetTime {
+                    Text("Sunset Time")
+                        .font(.largeTitle)
+                        .foregroundColor(.white)
+                    Text(time)
+                        .font(.title)
+                        .foregroundColor(.white)
+                } else {
+                    Text("No data")
+                        .foregroundColor(.white)
                 }
             }
+            .padding()
         }
         .task {
-            do {
-                isLoading = true
-                if let coordinate = locationManager.coordinate {
-                    let response = try await sunsetService.fetchSunset(
-                        for: Date(),
-                        lat: coordinate.latitude,
-                        lon: coordinate.longitude
-                    )
-                    sunset = response.daily.first
-                }
-            } catch {
-                self.error = error
+            await loadSunset()
+        }
+    }
+
+    private func loadSunset() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        guard let coord = locationManager.coordinate else { return }
+
+        do {
+            let response = try await sunsetService.fetchSunset(
+                for: Date(),
+                lat: coord.latitude,
+                lon: coord.longitude
+            )
+            if let iso = response.daily.first?.sunset,
+               let date = ISO8601DateFormatter().date(from: iso) {
+                let formatter = DateFormatter()
+                formatter.timeStyle = .short
+                sunsetTime = formatter.string(from: date)
+            } else {
+                errorMessage = "Invalid sunset data"
             }
-            isLoading = false
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }
 
-#Preview {
-    ContentView()
-        .environmentObject(MockSunsetService())
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .environmentObject(MockSunsetService())
+    }
 }
 
+// MARK: - Hex Color Extension
+
 extension Color {
+    /// Initialize a Color from a hex string, e.g. "#FF6B5C" or "FF6B5C"
     init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        let hex = hex.trimmingCharacters(in: .alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
+        let r, g, b, a: UInt64
         switch hex.count {
         case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+            (r, g, b, a) = ((int >> 8) * 17,
+                            (int >> 4 & 0xF) * 17,
+                            (int & 0xF) * 17,
+                            255)
         case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+            (r, g, b, a) = (int >> 16,
+                            int >> 8 & 0xFF,
+                            int & 0xFF,
+                            255)
         case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+            (r, g, b, a) = (int >> 24 & 0xFF,
+                            int >> 16 & 0xFF,
+                            int >> 8 & 0xFF,
+                            int & 0xFF)
         default:
-            (a, r, g, b) = (1, 1, 1, 0)
+            (r, g, b, a) = (1, 1, 1, 255)
         }
         self.init(
             .sRGB,
-            red: Double(r) / 255,
+            red:   Double(r) / 255,
             green: Double(g) / 255,
             blue:  Double(b) / 255,
             opacity: Double(a) / 255
         )
     }
-} 
+}
