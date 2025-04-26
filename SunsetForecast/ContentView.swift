@@ -1,10 +1,12 @@
 import SwiftUI
+import CoreLocation
 
 struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var sunset: Sunset?
     @State private var isLoading = false
     @State private var error: Error?
+    @EnvironmentObject private var sunsetService: MockSunsetService
     
     var body: some View {
         ZStack {
@@ -45,8 +47,13 @@ struct ContentView: View {
         .task {
             do {
                 isLoading = true
-                if let coordinate = await locationManager.currentCoordinate() {
-                    sunset = try await SunsetService.fetchSunset(for: coordinate.latitude, longitude: coordinate.longitude)
+                if let coordinate = locationManager.coordinate {
+                    let response = try await sunsetService.fetchSunset(
+                        for: Date(),
+                        lat: coordinate.latitude,
+                        lon: coordinate.longitude
+                    )
+                    sunset = response.daily.first
                 }
             } catch {
                 self.error = error

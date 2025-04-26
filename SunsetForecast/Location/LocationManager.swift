@@ -2,25 +2,25 @@ import Foundation
 import CoreLocation
 import Combine
 
-class LocationManager: NSObject, ObservableObject {
-    private let locationManager = CLLocationManager()
-    
+final class LocationManager: NSObject, ObservableObject {
     @Published var coordinate: CLLocationCoordinate2D?
-    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    
+    private let manager = CLLocationManager()
     
     override init() {
         super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.delegate = self
+        manager.requestWhenInUseAuthorization()
+        manager.startUpdatingLocation()
     }
     
     func requestLocation() {
-        locationManager.requestWhenInUseAuthorization()
+        manager.requestWhenInUseAuthorization()
     }
     
     func currentCoordinate() async -> CLLocationCoordinate2D? {
-        if authorizationStatus == .notDetermined {
-            locationManager.requestWhenInUseAuthorization()
+        if manager.authorizationStatus == .notDetermined {
+            manager.requestWhenInUseAuthorization()
         }
         
         return await withCheckedContinuation { continuation in
@@ -40,22 +40,17 @@ class LocationManager: NSObject, ObservableObject {
 }
 
 extension LocationManager: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        authorizationStatus = manager.authorizationStatus
-        
-        switch manager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            manager.startUpdatingLocation()
-        default:
-            break
+    func locationManager(_ manager: CLLocationManager,
+                        didUpdateLocations locations: [CLLocation]) {
+        guard let loc = locations.first else { return }
+        DispatchQueue.main.async {
+            self.coordinate = loc.coordinate
         }
+        manager.stopUpdatingLocation()
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        coordinate = locations.last?.coordinate
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location manager failed with error: \(error.localizedDescription)")
+    func locationManager(_ manager: CLLocationManager,
+                        didFailWithError error: Error) {
+        print("Location error:", error)
     }
 } 
