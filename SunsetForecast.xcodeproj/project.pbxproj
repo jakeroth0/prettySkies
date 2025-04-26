@@ -8,16 +8,20 @@
         /* Begin PBXBuildFile section */
         1A1A1A1A1A1A1A1A1A1A1A1A /* SunsetForecastApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1B /* SunsetForecastApp.swift */; };
         1A1A1A1A1A1A1A1A1A1A1A1C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1D /* ContentView.swift */; };
+        1A1A1A1A1A1A1A1A1A1A1A1G /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1F /* Assets.xcassets */; };
+        1A1A1A1A1A1A1A1A1A1A1A1H /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1I /* Info.plist */; };
         /* End PBXBuildFile section */
 
         /* Begin PBXFileReference section */
         1A1A1A1A1A1A1A1A1A1A1A1E /* SunsetForecast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SunsetForecast.app; sourceTree = BUILT_PRODUCTS_DIR; };
         1A1A1A1A1A1A1A1A1A1A1A1B /* SunsetForecastApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunsetForecastApp.swift; sourceTree = "<group>"; };
         1A1A1A1A1A1A1A1A1A1A1A1D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+        1A1A1A1A1A1A1A1A1A1A1A1F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+        1A1A1A1A1A1A1A1A1A1A1A1I /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
         /* End PBXFileReference section */
 
         /* Begin PBXFrameworksBuildPhase section */
-        1A1A1A1A1A1A1A1A1A1A1A1F /* Frameworks */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1J /* Frameworks */ = {
             isa = PBXFrameworksBuildPhase;
             buildActionMask = 2147483647;
             files = (
@@ -27,15 +31,15 @@
         /* End PBXFrameworksBuildPhase section */
 
         /* Begin PBXGroup section */
-        1A1A1A1A1A1A1A1A1A1A1A20 = {
+        1A1A1A1A1A1A1A1A1A1A1A1K = {
             isa = PBXGroup;
             children = (
-                1A1A1A1A1A1A1A1A1A1A1A21 /* SunsetForecast */,
-                1A1A1A1A1A1A1A1A1A1A1A22 /* Products */,
+                1A1A1A1A1A1A1A1A1A1A1A1L /* SunsetForecast */,
+                1A1A1A1A1A1A1A1A1A1A1A1M /* Products */,
             );
             sourceTree = "<group>";
         };
-        1A1A1A1A1A1A1A1A1A1A1A22 /* Products */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1M /* Products */ = {
             isa = PBXGroup;
             children = (
                 1A1A1A1A1A1A1A1A1A1A1A1E /* SunsetForecast.app */,
@@ -43,25 +47,27 @@
             name = Products;
             sourceTree = "<group>";
         };
-        1A1A1A1A1A1A1A1A1A1A1A21 /* SunsetForecast */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1L /* SunsetForecast */ = {
             isa = PBXGroup;
             children = (
-                1A1A1A1A1A1A1A1A1A1A1A23 /* Models */,
-                1A1A1A1A1A1A1A1A1A1A1A24 /* Views */,
-                1A1A1A1A1A1A1A1A1A1A1A25 /* Assets */,
+                1A1A1A1A1A1A1A1A1A1A1A1N /* Models */,
+                1A1A1A1A1A1A1A1A1A1A1A1O /* Views */,
+                1A1A1A1A1A1A1A1A1A1A1A1P /* Assets */,
+                1A1A1A1A1A1A1A1A1A1A1A1F /* Assets.xcassets */,
+                1A1A1A1A1A1A1A1A1A1A1A1I /* Info.plist */,
                 1A1A1A1A1A1A1A1A1A1A1A1B /* SunsetForecastApp.swift */,
             );
             path = SunsetForecast;
             sourceTree = "<group>";
         };
-        1A1A1A1A1A1A1A1A1A1A1A23 /* Models */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1N /* Models */ = {
             isa = PBXGroup;
             children = (
             );
             path = Models;
             sourceTree = "<group>";
         };
-        1A1A1A1A1A1A1A1A1A1A1A24 /* Views */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1O /* Views */ = {
             isa = PBXGroup;
             children = (
                 1A1A1A1A1A1A1A1A1A1A1A1D /* ContentView.swift */,
@@ -69,7 +75,7 @@
             path = Views;
             sourceTree = "<group>";
         };
-        1A1A1A1A1A1A1A1A1A1A1A25 /* Assets */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1P /* Assets */ = {
             isa = PBXGroup;
             children = (
             );
@@ -79,13 +85,13 @@
         /* End PBXGroup section */
 
         /* Begin PBXNativeTarget section */
-        1A1A1A1A1A1A1A1A1A1A1A26 /* SunsetForecast */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1Q /* SunsetForecast */ = {
             isa = PBXNativeTarget;
-            buildConfigurationList = 1A1A1A1A1A1A1A1A1A1A1A27 /* Build configuration list for PBXNativeTarget "SunsetForecast" */;
+            buildConfigurationList = 1A1A1A1A1A1A1A1A1A1A1A1R /* Build configuration list for PBXNativeTarget "SunsetForecast" */;
             buildPhases = (
-                1A1A1A1A1A1A1A1A1A1A1A28 /* Sources */,
-                1A1A1A1A1A1A1A1A1A1A1A1F /* Frameworks */,
-                1A1A1A1A1A1A1A1A1A1A1A29 /* Resources */,
+                1A1A1A1A1A1A1A1A1A1A1A1S /* Sources */,
+                1A1A1A1A1A1A1A1A1A1A1A1J /* Frameworks */,
+                1A1A1A1A1A1A1A1A1A1A1A1T /* Resources */,
             );
             buildRules = (
             );
@@ -99,19 +105,19 @@
         /* End PBXNativeTarget section */
 
         /* Begin PBXProject section */
-        1A1A1A1A1A1A1A1A1A1A1A2A /* Project object */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1U /* Project object */ = {
             isa = PBXProject;
             attributes = {
                 BuildIndependentTargetsInParallel = 1;
                 LastSwiftUpdateCheck = 1500;
                 LastUpgradeCheck = 1500;
                 TargetAttributes = {
-                    1A1A1A1A1A1A1A1A1A1A1A26 = {
+                    1A1A1A1A1A1A1A1A1A1A1A1Q = {
                         CreatedOnToolsVersion = 15.0;
                     };
                 };
             };
-            buildConfigurationList = 1A1A1A1A1A1A1A1A1A1A1A2B /* Build configuration list for PBXProject "SunsetForecast" */;
+            buildConfigurationList = 1A1A1A1A1A1A1A1A1A1A1A1V /* Build configuration list for PBXProject "SunsetForecast" */;
             compatibilityVersion = "Xcode 14.0";
             developmentRegion = en;
             hasScannedForEncodings = 0;
@@ -119,32 +125,34 @@
                 en,
                 Base,
             );
-            mainGroup = 1A1A1A1A1A1A1A1A1A1A1A20;
-            productRefGroup = 1A1A1A1A1A1A1A1A1A1A1A22 /* Products */;
+            mainGroup = 1A1A1A1A1A1A1A1A1A1A1A1K;
+            productRefGroup = 1A1A1A1A1A1A1A1A1A1A1A1M /* Products */;
             projectDirPath = "";
             projectRoot = "";
             targets = (
-                1A1A1A1A1A1A1A1A1A1A1A26 /* SunsetForecast */,
+                1A1A1A1A1A1A1A1A1A1A1A1Q /* SunsetForecast */,
             );
         };
         /* End PBXProject section */
 
         /* Begin PBXResourcesBuildPhase section */
-        1A1A1A1A1A1A1A1A1A1A1A29 /* Resources */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1T /* Resources */ = {
             isa = PBXResourcesBuildPhase;
             buildActionMask = 2147483647;
             files = (
+                1A1A1A1A1A1A1A1A1A1A1A1H /* Info.plist in Resources */,
+                1A1A1A1A1A1A1A1A1A1A1A1G /* Assets.xcassets in Resources */,
             );
             runOnlyForDeploymentPostprocessing = 0;
         };
         /* End PBXResourcesBuildPhase section */
 
         /* Begin PBXSourcesBuildPhase section */
-        1A1A1A1A1A1A1A1A1A1A1A28 /* Sources */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1S /* Sources */ = {
             isa = PBXSourcesBuildPhase;
             buildActionMask = 2147483647;
             files = (
-                1A1A1A1A1A1A1A1A1A1A1A /* SunsetForecastApp.swift in Sources */,
+                1A1A1A1A1A1A1A1A1A1A1A1A /* SunsetForecastApp.swift in Sources */,
                 1A1A1A1A1A1A1A1A1A1A1A1C /* ContentView.swift in Sources */,
             );
             runOnlyForDeploymentPostprocessing = 0;
@@ -152,7 +160,7 @@
         /* End PBXSourcesBuildPhase section */
 
         /* Begin XCBuildConfiguration section */
-        1A1A1A1A1A1A1A1A1A1A1A2C /* Debug */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1W /* Debug */ = {
             isa = XCBuildConfiguration;
             buildSettings = {
                 ALWAYS_SEARCH_USER_PATHS = NO;
@@ -212,7 +220,7 @@
             };
             name = Debug;
         };
-        1A1A1A1A1A1A1A1A1A1A1A2D /* Release */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1X /* Release */ = {
             isa = XCBuildConfiguration;
             buildSettings = {
                 ALWAYS_SEARCH_USER_PATHS = NO;
@@ -266,7 +274,7 @@
             };
             name = Release;
         };
-        1A1A1A1A1A1A1A1A1A1A1A2E /* Debug */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1Y /* Debug */ = {
             isa = XCBuildConfiguration;
             buildSettings = {
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -295,7 +303,7 @@
             };
             name = Debug;
         };
-        1A1A1A1A1A1A1A1A1A1A1A2F /* Release */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1Z /* Release */ = {
             isa = XCBuildConfiguration;
             buildSettings = {
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -327,25 +335,25 @@
         /* End XCBuildConfiguration section */
 
         /* Begin XCConfigurationList section */
-        1A1A1A1A1A1A1A1A1A1A1A27 /* Build configuration list for PBXNativeTarget "SunsetForecast" */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1R /* Build configuration list for PBXNativeTarget "SunsetForecast" */ = {
             isa = XCConfigurationList;
             buildConfigurations = (
-                1A1A1A1A1A1A1A1A1A1A1A2E /* Debug */,
-                1A1A1A1A1A1A1A1A1A1A1A2F /* Release */,
+                1A1A1A1A1A1A1A1A1A1A1A1Y /* Debug */,
+                1A1A1A1A1A1A1A1A1A1A1A1Z /* Release */,
             );
             defaultConfigurationIsVisible = 0;
             defaultConfigurationName = Release;
         };
-        1A1A1A1A1A1A1A1A1A1A1A2B /* Build configuration list for PBXProject "SunsetForecast" */ = {
+        1A1A1A1A1A1A1A1A1A1A1A1V /* Build configuration list for PBXProject "SunsetForecast" */ = {
             isa = XCConfigurationList;
             buildConfigurations = (
-                1A1A1A1A1A1A1A1A1A1A1A2C /* Debug */,
-                1A1A1A1A1A1A1A1A1A1A1A2D /* Release */,
+                1A1A1A1A1A1A1A1A1A1A1A1W /* Debug */,
+                1A1A1A1A1A1A1A1A1A1A1A1X /* Release */,
             );
             defaultConfigurationIsVisible = 0;
             defaultConfigurationName = Release;
         };
         /* End XCConfigurationList section */
     };
-    rootObject = 1A1A1A1A1A1A1A1A1A1A1A2A /* Project object */;
+    rootObject = 1A1A1A1A1A1A1A1A1A1A1A1U /* Project object */;
 } 
