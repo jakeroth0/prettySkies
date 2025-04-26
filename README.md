@@ -1,49 +1,31 @@
-# prettySkies
+# SunsetForecast
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A beautiful iOS app for tracking and forecasting sunset times.
 
-  ## Description
-  This app will allow users to see a sunset and sunrise forcast based on their location
+## Requirements
 
-  ## Table of Contents
-  - [Link](#Link)
-  - [Installation](#Installation)
-  - [Usage](#Usage)
-  - [License](#License)
-  - [Contributing](#Contributing)
-  - [Tests](#Tests)
-  - [Questions](#Questions)
+- iOS 17.0+
+- Xcode 15.0+
+- Swift 5.9
 
-  ![Thumbnail](insert relitive path to img here)
+## Project Structure
 
-  ## Link
-  [Link](insert link to deployed app or video here)
-  
-  ## Installation
-  To install necessary dependencies, run the following command:
+```
+SunsetForecast/
+├── Models/         # Data models and business logic
+├── Views/          # SwiftUI views
+├── Assets/         # Images, colors, and other assets
+└── SunsetForecastApp.swift  # App entry point
+```
 
-  ` npm i `
+## Getting Started
 
-  ## Usage
-  nothing yet
+1. Clone the repository
+2. Open `SunsetForecast.xcodeproj` in Xcode
+3. Build and run the project
 
-  ## License
-  MIT
-  Copyright 2024 jakeroth0
+## Features
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-    
-    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-    
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.;
-
-  ## Contributing
-  make a pr
-
-  ## Tests
-  To run tests, run the following command:
-
-  ` npm test `
-
-  ## Questions
-  If you have any questions about the repo, open an issue or contact me directly at jakeroth0@gmail.com. You can find more of my work on GitHub at [jakeroth0](https://github.com/jakeroth0).
+- Beautiful gradient background
+- Clean, modern UI
+- Coming soon: Sunset time tracking and forecasting
