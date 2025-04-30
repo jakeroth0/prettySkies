@@ -1,225 +1,218 @@
 import SwiftUI
 import CoreLocation
 
+struct DailyForecast: Identifiable {
+    let id:      Date
+    let weekday: String
+    let score:   Int
+}
+
 struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var sunsetService  = SunsetService()
 
     @State private var locationName: String?
-    @State private var sunsetTime:  String?
-    @State private var score:       Int?
-    @State private var isLoading:   Bool = false
+    @State private var forecasts:    [DailyForecast] = []
+    @State private var isLoading      = false
     @State private var errorMessage: String?
 
     var body: some View {
         ZStack {
-            // Gradient background
+            // ← Use our hex-init with the label
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color(hex: "#FF6B5C"),
                     Color(hex: "#FFB35C"),
                     Color(hex: "#FFD56B")
                 ]),
-                startPoint: .top,
-                endPoint: .bottom
+                startPoint: .top, endPoint: .bottom
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 8) {
-                // 1. Location name
-                if let locName = locationName {
-                    Text(locName)
-                        .font(.headline)
-                        .foregroundColor(.white)
+            ScrollView {
+                VStack(spacing: 16) {
+                    if let loc = locationName {
+                        Text(loc)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+
+                    if let err = errorMessage {
+                        Text("Error: \(err)")
+                            .foregroundColor(.white)
+                    } else if isLoading {
+                        Text("Loading…")
+                            .foregroundColor(.white)
+                    }
+
+                    if !forecasts.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("10-Day Forecast")
+                                .font(.headline)
+                                .foregroundColor(.white)
+
+                            ForEach(forecasts) { day in
+                                HStack(spacing: 12) {
+                                    Text(day.weekday)
+                                        .frame(width: 40, alignment: .leading)
+                                        .foregroundColor(.white)
+                                    Image(systemName: "cloud.fill")
+                                        .foregroundColor(.white)
+                                    GeometryReader { geo in
+                                        let frac = CGFloat(day.score) / 100
+                                        ZStack(alignment: .leading) {
+                                            Capsule()
+                                                .fill(Color.white.opacity(0.3))
+                                                .frame(height: 6)
+                                            Capsule()
+                                                .fill(Color.white)
+                                                .frame(
+                                                    width: geo.size.width * frac,
+                                                    height: 6
+                                                )
+                                        }
+                                    }
+                                    .frame(height: 6)
+                                    Text("\(day.score)%")
+                                        .frame(width: 40, alignment: .trailing)
+                                        .foregroundColor(.white)
+                                }
+                                .frame(height: 28)
+                            }
+                        }
+                        .padding()
+                        .background(Color.black.opacity(0.25))
+                        .cornerRadius(12)
+                        .padding(.top, 24)
+                    }
                 }
-
-                // 2. Sunset time & score
-                if let error = errorMessage {
-                    Text("Error: \(error)")
-                        .foregroundColor(.white)
-
-                } else if isLoading {
-                    Text("Loading…")
-                        .foregroundColor(.white)
-
-                } else if let time = sunsetTime, let s = score {
-                    Text("Sunset Time")
-                        .font(.largeTitle)
-                        .foregroundColor(.white)
-                    Text(time)
-                        .font(.title)
-                        .foregroundColor(.white)
-                    Text("Score: \(s)/100")
-                        .font(.title2)
-                        .foregroundColor(.white)
-
-                } else {
-                    Text("Waiting for data…")
-                        .foregroundColor(.white)
-                }
+                .padding(.horizontal)
             }
-            .padding()
         }
         .onAppear {
             print("[ContentView] onAppear")
             locationManager.requestLocation()
         }
-        .onReceive(locationManager.$coordinate) { newCoord in
-            if let coord = newCoord {
-                print("[ContentView] Received coordinate:", coord)
-                Task {
-                    // Reverse-geocode and fetch data in parallel
-                    await fetchLocationName(coord)
-                    await loadSunset(for: coord)
-                }
-            } else {
-                print("[ContentView] coordinate is still nil")
+        .onReceive(locationManager.$coordinate) { coordOpt in
+            guard let coord = coordOpt else { return }
+            Task {
+                print("[ContentView] 📍 Received coord:", coord)
+                await fetchLocationName(coord)
+                await buildForecasts(for: coord)
             }
         }
     }
-
-    // MARK: - Reverse Geocoding
 
     private func fetchLocationName(_ coord: CLLocationCoordinate2D) async {
-        let location = CLLocation(latitude: coord.latitude,
-                                  longitude: coord.longitude)
-        do {
-            let placemarks = try await CLGeocoder().reverseGeocodeLocation(location)
-            if let place = placemarks.first {
-                let city    = place.locality ?? ""
-                let region  = place.administrativeArea ?? ""
-                let country = place.country ?? ""
-                let display = [city, region, country]
-                    .filter { !$0.isEmpty }
-                    .joined(separator: ", ")
-                print("[ContentView] locationName set to:", display)
-                await MainActor.run { locationName = display }
-            }
-        } catch {
-            print("[ContentView] reverseGeocode error:", error)
+        let loc = CLLocation(latitude: coord.latitude,
+                             longitude: coord.longitude)
+        if let p = try? await CLGeocoder().reverseGeocodeLocation(loc).first {
+            let parts = [p.locality, p.administrativeArea, p.country]
+                .compactMap { $0 }
+            let name = parts.joined(separator: ", ")
+            print("[ContentView] 🏷 locationName =", name)
+            await MainActor.run { locationName = name }
         }
     }
 
-    // MARK: - Fetch Sunset & Score
-
-    private func loadSunset(for coord: CLLocationCoordinate2D) async {
-        print("[ContentView] loadSunset(start) for:", coord)
+    private func buildForecasts(for coord: CLLocationCoordinate2D) async {
         isLoading = true
         defer { isLoading = false }
 
         do {
-            let response = try await sunsetService.fetchSunset(
+            let resp = try await sunsetService.fetchData(
                 for: Date(),
                 lat: coord.latitude,
                 lon: coord.longitude
             )
-            let daily = response.daily
+            let daily  = resp.daily
+            let hourly = resp.hourly
+            print("[ContentView] 🌄 fetched daily=\(daily.time.count), hourly=\(hourly.time.count)")
 
-            guard daily.sunset.count > 0,
-                  daily.cloudcover_mean.count > 0 else {
-                errorMessage = "Incomplete data from API"
-                return
+            func indexFor(_ isoSun: String) -> Int? {
+                let parts = isoSun.split(separator: "T")
+                guard parts.count == 2 else { return nil }
+                let prefix = "\(parts[0])T\(parts[1].split(separator: ":")[0]):"
+                return hourly.time.firstIndex { $0.hasPrefix(prefix) }
             }
 
-            // Extract time and score
-            let isoString  = daily.sunset[0]
-            let cloudCover = daily.cloudcover_mean[0]
+            // Use DateFormatter for "yyyy-MM-dd"
+            let dayFormatter = DateFormatter()
+            dayFormatter.dateFormat = "yyyy-MM-dd"
 
-            if let timePart = isoString.split(separator: "T").last {
-                sunsetTime = String(timePart)
-                print("[ContentView] sunsetTime set to:", sunsetTime!)
+            var list: [DailyForecast] = []
+
+            for i in daily.time.indices {
+                let dayString = daily.time[i]
+                guard let dayDate = dayFormatter.date(from: dayString) else {
+                    print("[ContentView] ⚠️ Could not parse", dayString)
+                    continue
+                }
+                let weekday = dayDate.formatted(.dateTime.weekday(.abbreviated))
+                let sunISO  = daily.sunset[i]
+
+                if i == 0 {
+                    // TODAY: hourly cloud layers
+                    if let idx = indexFor(sunISO) {
+                        let hi  = hourly.cloudcover_high[idx]
+                        let mid = hourly.cloudcover_mid[idx]
+                        let lo  = hourly.cloudcover_low[idx]
+                        let sc  = Int(((hi + mid + lo)/3.0).clamped(to: 0...100))
+                        print("[ContentView] Day0 hourly → hi:\(hi) mid:\(mid) lo:\(lo) score:\(sc)")
+                        list.append(DailyForecast(id: dayDate, weekday: weekday, score: sc))
+                    } else {
+                        print("[ContentView] ⚠️ no hourly index for", sunISO)
+                    }
+                } else {
+                    // FUTURE: daily mean
+                    let meanCloud = daily.cloudcover_mean[i]
+                    let sc        = max(0, 100 - Int(meanCloud))
+                    print("[ContentView] Day\(i) daily → meanCloud:\(meanCloud) score:\(sc)")
+                    list.append(DailyForecast(id: dayDate, weekday: weekday, score: sc))
+                }
             }
 
-            score = max(0, 100 - Int(cloudCover))
-            print("[ContentView] score set to:", score!)
-
+            await MainActor.run {
+                forecasts = list
+                print("[ContentView] 🗓 built \(list.count) forecasts")
+            }
         } catch {
-            errorMessage = error.localizedDescription
-            print("[ContentView] loadSunset(error):", error)
-        }
-    }
-}
-
-// MARK: - Static Preview
-
-struct StaticContentView_Preview: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: "#FF6B5C"),
-                    Color(hex: "#FFB35C"),
-                    Color(hex: "#FFD56B")
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 8) {
-                Text("Cupertino, CA")   // sample locale
-                    .font(.headline)
-                    .foregroundColor(.white)
-                Text("Sunset Time")
-                    .font(.largeTitle)
-                    .foregroundColor(.white)
-                Text("7:55 PM")
-                    .font(.title)
-                    .foregroundColor(.white)
-                Text("Score: 30/100")
-                    .font(.title2)
-                    .foregroundColor(.white)
+            print("[ContentView] ❌ buildForecasts error:", error)
+            await MainActor.run {
+                errorMessage = error.localizedDescription
             }
-            .padding()
         }
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            StaticContentView_Preview()
-                .previewDisplayName("Static Data Preview")
-            ContentView()
-                .previewDisplayName("Live Preview (no location)")
-        }
-    }
-}
-
-// MARK: - Hex Color Extension
+// MARK: — Hex Color Extension
 
 extension Color {
-    /// Initialize a Color from a hex string, e.g. "#FF6B5C"
+    /// Initialize a SwiftUI Color from a hex string like "#RRGGBB" or "RRGGBB"
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: .alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
-        let r, g, b, a: UInt64
+        let r, g, b: UInt64
         switch hex.count {
-        case 3:
-            (r, g, b, a) = ((int >> 8) * 17,
-                            (int >> 4 & 0xF) * 17,
-                            (int & 0xF) * 17,
-                            255)
         case 6:
-            (r, g, b, a) = (int >> 16,
-                            int >> 8 & 0xFF,
-                            int & 0xFF,
-                            255)
-        case 8:
-            (r, g, b, a) = (int >> 24 & 0xFF,
-                            int >> 16 & 0xFF,
-                            int >> 8 & 0xFF,
-                            int & 0xFF)
+            (r, g, b) = (int >> 16, int >> 8 & 0xFF, int & 0xFF)
         default:
-            (r, g, b, a) = (1, 1, 1, 255)
+            (r, g, b) = (1, 1, 1)
         }
         self.init(
             .sRGB,
             red:   Double(r) / 255,
             green: Double(g) / 255,
-            blue:  Double(b) / 255,
-            opacity: Double(a) / 255
+            blue:  Double(b) / 255
         )
+    }
+}
+
+// MARK: — Clamp Helper
+
+extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
     }
 }
