@@ -1,14 +1,13 @@
-// SunsetForecast/SunsetForecastApp.swift
 import SwiftUI
 
 @main
 struct SunsetForecastApp: App {
-    @StateObject private var favoritesStore = FavoritesStore()
+    @StateObject private var favStore = FavoritesStore()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(favoritesStore)
+              .environmentObject(favStore)
         }
     }
 }
