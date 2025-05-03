@@ -23,7 +23,7 @@ struct ContentView: View {
     @State private var locationName: String?
     @State private var forecasts: [DailyForecast] = []
 
-    // Today’s detailed values
+    // Today's detailed values
     @State private var todayCloudMean: Double?
     @State private var todayHighCloud: Double?
     @State private var todayRh: Double?
@@ -64,7 +64,7 @@ struct ContentView: View {
             .padding()
           }
 
-          // MARK: – Floating “Favorites” Button
+          // MARK: – Floating "Favorites" Button
           if fixedLocation == nil {
             VStack {
               Spacer()
@@ -137,7 +137,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: – Today’s Score & Times
+    // MARK: – Today's Score & Times
     private var todayScoreView: some View {
         VStack(spacing: 8) {
           if let score = forecasts.first?.score {
@@ -159,10 +159,10 @@ struct ContentView: View {
         }
     }
 
-    // MARK: – Today’s Conditions Grid
+    // MARK: – Today's Conditions Grid
     private var variableCardView: some View {
         VStack(spacing: 12) {
-          Text("Today’s Conditions")
+          Text("Today's Conditions")
             .font(.headline)
             .foregroundColor(.white)
 
@@ -278,10 +278,9 @@ struct ContentView: View {
             lat: coord.latitude,
             lon: coord.longitude
           )
-          let daily     = resp.daily
-          let hourlyW   = resp.hourlyWeather
-          let hourlyAir = resp.hourlyAir
-          print("[Data] got daily=\(daily.time.count), hourlyW=\(hourlyW.time.count), hourlyAir=\(hourlyAir.time.count)")
+          let daily = resp.daily
+          let hourly = resp.hourly
+          print("[Data] got daily=\(daily.time.count), hourly=\(hourly.time.count)")
 
           // Build 10-day list
           let dayFmt = DateFormatter()
@@ -292,10 +291,10 @@ struct ContentView: View {
             let wd = d.formatted(.dateTime.weekday(.abbreviated))
             let sc: Int
             if i == 0,
-               let idx = indexFor(daily.sunset[i], in: hourlyW.time) {
-              let hi  = hourlyW.cloudcover_high[idx]
-              let mi  = hourlyW.cloudcover_mid[idx]
-              let lo  = hourlyW.cloudcover_low[idx]
+               let idx = indexFor(daily.sunset[i], in: hourly.time) {
+              let hi  = hourly.cloudcover_high[idx]
+              let mi  = hourly.cloudcover_mid[idx]
+              let lo  = hourly.cloudcover_low[idx]
               let avg = (hi+mi+lo)/3.0
               sc = Int(max(0, min(avg, 100)))
             } else {
@@ -304,7 +303,7 @@ struct ContentView: View {
             list.append(.init(id: d, weekday: wd, score: sc))
           }
 
-          // Extract today’s details
+          // Extract today's details
           let sunFmt = DateFormatter()
           sunFmt.dateFormat = "yyyy-MM-dd'T'HH:mm"
           if let sunD = sunFmt.date(from: daily.sunset[0]) {
@@ -312,10 +311,10 @@ struct ContentView: View {
             goldenMoment = sunD.addingTimeInterval(-1800)
           }
           todayCloudMean = daily.cloudcover_mean[0]
-          if let idx = indexFor(daily.sunset[0], in: hourlyW.time) {
-            todayHighCloud = hourlyW.cloudcover_high[idx]
-            todayRh        = hourlyW.relativehumidity_2m[idx]
-            todayAod       = hourlyAir.aerosol_optical_depth[idx]
+          if let idx = indexFor(daily.sunset[0], in: hourly.time) {
+            todayHighCloud = hourly.cloudcover_high[idx]
+            todayRh = nil
+            todayAod = nil
           }
 
           await MainActor.run {

@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// Uses Open-Meteo’s free geocoding endpoint
+/// Uses Open-Meteo's free geocoding endpoint
 struct OpenMeteoSearchService: LocationSearchService {
     func search(_ query: String) async throws -> [Location] {
         guard
@@ -32,16 +32,14 @@ struct OpenMeteoSearchService: LocationSearchService {
             let wrapper = try JSONDecoder().decode(OMResponse.self, from: data)
             return wrapper.results?
               .map { res in
-                // Compose a user-friendly name
-                let parts = [res.name,
-                             res.admin1,
-                             res.country]
-                             .compactMap{ $0 }
-                let title = parts.joined(separator: ", ")
                 return Location(
-                  name: title,
-                  latitude: res.latitude,
-                  longitude: res.longitude
+                    id: "\(res.latitude),\(res.longitude)",
+                    name: res.name,
+                    latitude: res.latitude,
+                    longitude: res.longitude,
+                    country: res.country ?? "",
+                    admin1: res.admin1,
+                    timeZoneIdentifier: TimeZone.current.identifier
                 )
               } ?? []
         } catch let dec as DecodingError {

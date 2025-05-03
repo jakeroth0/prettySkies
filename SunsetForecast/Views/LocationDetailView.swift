@@ -84,7 +84,7 @@ struct LocationDetailView: View {
                 lon: location.longitude
             )
             let daily  = resp.daily
-            let hourly = resp.hourlyWeather
+            let hourly = resp.hourly
 
             // Parse sunset time
             let sunFmt = DateFormatter()

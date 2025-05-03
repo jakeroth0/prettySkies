@@ -1,22 +1,29 @@
 // SunsetForecast/Models/Location.swift
 
 import Foundation
+import CoreLocation
 
-struct Location: Identifiable, Hashable, Codable {
-    let id: UUID
+struct Location: Identifiable, Codable, Hashable {
+    let id: String
     let name: String
     let latitude: Double
     let longitude: Double
+    let country: String
+    let admin1: String?
+    let timeZoneIdentifier: String
 
-    init(
-        id: UUID = .init(),
-        name: String,
-        latitude: Double,
-        longitude: Double
-    ) {
-        self.id = id
-        self.name = name
-        self.latitude = latitude
-        self.longitude = longitude
+    var displayName: String {
+        if let admin1 = admin1 {
+            return "\(name), \(admin1), \(country)"
+        }
+        return "\(name), \(country)"
+    }
+
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+
+    var timeZone: TimeZone? {
+        TimeZone(identifier: timeZoneIdentifier)
     }
 }
