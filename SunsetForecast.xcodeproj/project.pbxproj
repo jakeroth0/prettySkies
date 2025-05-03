@@ -10,6 +10,10 @@
 		1A1A1A1A1A1A1A1A1A1A1A1A /* SunsetForecastApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1B /* SunsetForecastApp.swift */; };
 		1A1A1A1A1A1A1A1A1A1A1A1G /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1F /* Assets.xcassets */; };
 		1A1A1A1A1A1A1A1A1A1A1A1H /* SunsetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A1A1A1A1A1A1A1A1I /* SunsetService.swift */; };
+		D2591DD62DC6AFCF002221D1 /* ForecastResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2591DD52DC6AFCF002221D1 /* ForecastResponse.swift */; };
+		D2591DD82DC6BB97002221D1 /* AQResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2591DD72DC6BB97002221D1 /* AQResponse.swift */; };
+		D28636C22DC6C5C500EE42FB /* Comparable+Clamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D28636C12DC6C5C500EE42FB /* Comparable+Clamp.swift */; };
+		D28636C62DC6C7F900EE42FB /* AirQualityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D28636C52DC6C7F900EE42FB /* AirQualityService.swift */; };
 		D29706322DC2F6B1006094B0 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29706302DC2F6B1006094B0 /* SearchViewModel.swift */; };
 		D29706342DC2F6C0006094B0 /* Location.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29706332DC2F6C0006094B0 /* Location.swift */; };
 		D29706382DC2F6CE006094B0 /* LocationSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29706362DC2F6CE006094B0 /* LocationSearchService.swift */; };
@@ -29,6 +33,10 @@
 		1A1A1A1A1A1A1A1A1A1A1A1F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A1A1A1A1A1A1A1A1A1A1A1I /* SunsetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunsetService.swift; sourceTree = "<group>"; };
 		D2016CC32DBDB544008459E8 /* SanFrancisco.gpx */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = SanFrancisco.gpx; sourceTree = "<group>"; };
+		D2591DD52DC6AFCF002221D1 /* ForecastResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastResponse.swift; sourceTree = "<group>"; };
+		D2591DD72DC6BB97002221D1 /* AQResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AQResponse.swift; sourceTree = "<group>"; };
+		D28636C12DC6C5C500EE42FB /* Comparable+Clamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparable+Clamp.swift"; sourceTree = "<group>"; };
+		D28636C52DC6C7F900EE42FB /* AirQualityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirQualityService.swift; sourceTree = "<group>"; };
 		D29706302DC2F6B1006094B0 /* SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
 		D29706332DC2F6C0006094B0 /* Location.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Location.swift; sourceTree = "<group>"; };
 		D29706352DC2F6CE006094B0 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
@@ -90,6 +98,8 @@
 			isa = PBXGroup;
 			children = (
 				D29706332DC2F6C0006094B0 /* Location.swift */,
+				D2591DD52DC6AFCF002221D1 /* ForecastResponse.swift */,
+				D2591DD72DC6BB97002221D1 /* AQResponse.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -119,6 +129,7 @@
 				D29706352DC2F6CE006094B0 /* FavoritesStore.swift */,
 				D29706362DC2F6CE006094B0 /* LocationSearchService.swift */,
 				D29706372DC2F6CE006094B0 /* OpenMeteoSearchService.swift */,
+				D28636C52DC6C7F900EE42FB /* AirQualityService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -135,6 +146,7 @@
 			isa = PBXGroup;
 			children = (
 				D29706412DC3022A006094B0 /* Color+Hex.swift */,
+				D28636C12DC6C5C500EE42FB /* Comparable+Clamp.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -221,14 +233,18 @@
 				D29706322DC2F6B1006094B0 /* SearchViewModel.swift in Sources */,
 				D29706402DC2FD49006094B0 /* LocationDetailView.swift in Sources */,
 				D297063D2DC2F6EB006094B0 /* FavoritesView.swift in Sources */,
+				D2591DD62DC6AFCF002221D1 /* ForecastResponse.swift in Sources */,
 				D297063E2DC2F6EB006094B0 /* SearchView.swift in Sources */,
+				D28636C62DC6C7F900EE42FB /* AirQualityService.swift in Sources */,
 				D2C6F9EB2DBD9076004865E6 /* LocationManager.swift in Sources */,
 				1A1A1A1A1A1A1A1A1A1A1A1A /* SunsetForecastApp.swift in Sources */,
 				D29706382DC2F6CE006094B0 /* LocationSearchService.swift in Sources */,
+				D2591DD82DC6BB97002221D1 /* AQResponse.swift in Sources */,
 				D29706392DC2F6CE006094B0 /* OpenMeteoSearchService.swift in Sources */,
 				D297063A2DC2F6CE006094B0 /* FavoritesStore.swift in Sources */,
 				D29706342DC2F6C0006094B0 /* Location.swift in Sources */,
 				1A1A1A1A1A1A1A1A1A1A1A1H /* SunsetService.swift in Sources */,
+				D28636C22DC6C5C500EE42FB /* Comparable+Clamp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

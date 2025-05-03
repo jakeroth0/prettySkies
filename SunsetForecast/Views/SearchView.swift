@@ -1,62 +1,77 @@
+// SunsetForecast/Views/SearchView.swift
+
 import SwiftUI
+import CoreLocation
 
 struct SearchView: View {
     @EnvironmentObject var favoritesStore: FavoritesStore
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = SearchViewModel()
+    @StateObject private var vm = SearchViewModel()
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
-                // Title
-                Text("Sunsets")
-                    .font(.largeTitle.bold())
-                    .foregroundColor(.white)
-                    .padding(.top)
+            ZStack {
+                Color.black.ignoresSafeArea()
 
-                // Search field
-                TextField("Search cities…", text: $viewModel.searchText)
-                    .textFieldStyle(.roundedBorder)
-                    .padding(.horizontal)
-                    .onChange(of: viewModel.searchText) { _ in
-                        Task { await viewModel.performSearch() }
+                VStack(spacing: 16) {
+                    Text("Sunsets")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.white)
+
+                    // MARK: – Search Field
+                    TextField("Search cities…", text: $vm.searchText)
+                        .textFieldStyle(.roundedBorder)
+                        .padding(.horizontal)
+
+                    // MARK: – kick off a search any time the text changes
+                    .task(id: vm.searchText) {
+                        await vm.performSearch()
                     }
 
-                // Suggestions list
-                List(viewModel.searchResults, id: \.id) { suggestion in
-                    Button {
-                        favoritesStore.add(suggestion)
-                        dismiss()
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(suggestion.displayName)
-                                    .foregroundColor(.primary)
-                                Text(localTime(for: suggestion))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                    // MARK: – Loading / Error
+                    if vm.isLoading {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.white)
+                    } else if let error = vm.error {
+                        Text(error.localizedDescription)
+                            .foregroundColor(.red)
+                            .padding()
+                    }
+
+                    // MARK: – Suggestions List
+                    List(vm.searchResults, id: \.self) { sug in
+                        Button {
+                            Task {
+                                let loc = await vm.selectLocation(sug)
+                                favoritesStore.add(loc)
+                                dismiss()
                             }
-                            Spacer()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(sug.displayName)
+                                        .foregroundColor(.white)
+                                    Text(localTime(for: sug))
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
                         }
                     }
+                    .listStyle(.plain)
                 }
-                .listStyle(.plain)
             }
-            .background(Color.black.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 
     private func localTime(for loc: Location) -> String {
         let fmt = DateFormatter()
         fmt.timeStyle = .short
-        fmt.timeZone = loc.timeZone ?? .autoupdatingCurrent
+        fmt.timeZone  = loc.timeZone ?? .current
         return fmt.string(from: Date())
-    }
-}
-
-#Preview {
-    NavigationStack {
-        SearchView()
-            .environmentObject(FavoritesStore())
     }
 }
