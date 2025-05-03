@@ -1,9 +1,13 @@
+// SunsetForecast/Location/LocationManager.swift
+
 import Foundation
 import CoreLocation
+import Combine
 
-/// Wraps CLLocationManager to publish the user’s coordinate.
 final class LocationManager: NSObject, ObservableObject {
     @Published var coordinate: CLLocationCoordinate2D?
+    @Published var lastPlaceName: String?
+
     private let manager = CLLocationManager()
 
     override init() {
@@ -11,36 +15,48 @@ final class LocationManager: NSObject, ObservableObject {
         manager.delegate = self
         print("[LocationManager] init: requesting when-in-use auth")
         manager.requestWhenInUseAuthorization()
+        manager.startUpdatingLocation()
     }
 
-    /// Call to start / restart updates
     func requestLocation() {
-        print("[LocationManager] requestLocation() status:",
-              manager.authorizationStatus.rawValue)
+        print("[LocationManager] requestLocation() status:", manager.authorizationStatus.rawValue)
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
     }
 }
 
 extension LocationManager: CLLocationManagerDelegate {
-    func locationManager(_ m: CLLocationManager, didChangeAuthorization s: CLAuthorizationStatus) {
-        print("[LocationManager] auth changed to", s.rawValue)
-        if s == .authorizedWhenInUse || s == .authorizedAlways {
-            m.startUpdatingLocation()
+    func locationManager(_ manager: CLLocationManager,
+                         didChangeAuthorization status: CLAuthorizationStatus) {
+        print("[LocationManager] auth changed to", status.rawValue)
+        if status == .authorizedWhenInUse || status == .authorizedAlways {
+            manager.startUpdatingLocation()
         }
     }
 
-    func locationManager(_ m: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
-        guard let loc = locs.first else { return }
-        let c = loc.coordinate
-        print("[LocationManager] didUpdateLocations", c)
+    func locationManager(_ manager: CLLocationManager,
+                         didUpdateLocations locations: [CLLocation]) {
+        guard let loc = locations.first else { return }
+        print("[LocationManager] didUpdateLocations", loc.coordinate)
         DispatchQueue.main.async {
-            self.coordinate = c
+            self.coordinate = loc.coordinate
         }
-        m.stopUpdatingLocation()  // one-shot
+        // reverse-geocode to get a human name
+        CLGeocoder().reverseGeocodeLocation(loc) { placemarks, error in
+            guard let p = placemarks?.first, error == nil else { return }
+            let parts = [p.locality, p.administrativeArea, p.country]
+                          .compactMap { $0 }
+            DispatchQueue.main.async {
+                self.lastPlaceName = parts.joined(separator: ", ")
+                print("[LocationManager] lastPlaceName =", self.lastPlaceName!)
+            }
+        }
+        manager.stopUpdatingLocation()
     }
 
-    func locationManager(_ m: CLLocationManager, didFailWithError e: Error) {
-        print("[LocationManager] fail:", e.localizedDescription)
+    func locationManager(_ manager: CLLocationManager,
+                         didFailWithError error: Error) {
+        let ns = error as NSError
+        print("[LocationManager] fail:", ns.localizedDescription)
     }
 }

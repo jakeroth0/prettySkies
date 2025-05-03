@@ -1,19 +1,25 @@
+// SunsetForecast/Helpers/Color+Hex.swift
+
 import SwiftUI
 
-/// Simple hex→Color initializer.
-/// Trims non-hex chars, scans into UInt64, splits into RGBA.
 extension Color {
+    /// Create a Color from a hex string (e.g. "#RRGGBB" or "RRGGBB").
     init(hex: String) {
-        let hexClean = hex.trimmingCharacters(in: .alphanumerics.inverted)
-        var int: UInt64 = 0
+        // Strip out any non-hex characters
+        let hexClean = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int = UInt64()
         Scanner(string: hexClean).scanHexInt64(&int)
+
         let r, g, b: UInt64
-        if hexClean.count == 6 {
-            (r, g, b) = ((int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF)
-        } else {
-            (r, g, b) = (255, 255, 255)  // fallback white
+        switch hexClean.count {
+        case 6: // RRGGBB
+            (r, g, b) = ((int >> 16) & 0xFF,
+                         (int >> 8)  & 0xFF,
+                         int         & 0xFF)
+        default: // fallback white
+            (r, g, b) = (255, 255, 255)
         }
-        print("[Color+Hex] Loaded hex:", hexClean, "→", r, g, b)
+
         self.init(
             .sRGB,
             red:   Double(r) / 255,

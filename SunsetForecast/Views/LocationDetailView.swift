@@ -1,37 +1,110 @@
+// SunsetForecast/Views/LocationDetailView.swift
+
 import SwiftUI
 
 struct LocationDetailView: View {
-  let location: Location
-  @State private var data: ForecastResponse?
-  @State private var isLoading = false
-  private let svc = SunsetService.shared
+    let location: Location
+    @State private var forecast: ForecastResponse?
+    @State private var loadError: Error?
+    @State private var isLoading = false
 
-  var body: some View {
-    ScrollView {
-      VStack(spacing: 16) {
-        Text(location.displayName).font(.title2)
-        if isLoading { ProgressView() }
-        else if let d = data {
-          // … render your detailed UI …
-          Text("Sunset: \(formatTime(d.daily.sunset[0]))")
+    var body: some View {
+        ZStack {
+            // Background gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "#1a1a1a"),
+                    Color(hex: "#2d2d2d")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Location header
+                    VStack(spacing: 8) {
+                        Text(location.displayName)
+                            .font(.title)
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+
+                    // Today's sunset card
+                    if let f = forecast,
+                       let rawSun = f.daily.sunset.first,
+                       // API returns "YYYY-MM-DDTHH:MM", ISO8601DateFormatter wants seconds
+                       let date = ISO8601DateFormatter().date(from: rawSun + ":00")
+                    {
+                        VStack(spacing: 12) {
+                            Text("Sunset Today")
+                                .font(.headline)
+                                .foregroundColor(.white)
+
+                            Text(date.formatted(.dateTime.hour().minute()))
+                                .font(.title2)
+                                .foregroundColor(.white)
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(12)
+                    }
+
+                    // Loading and error states
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.white)
+                            .padding()
+                    }
+                    if let err = loadError {
+                        Text(err.localizedDescription)
+                            .foregroundColor(.red)
+                            .padding()
+                    }
+                }
+                .padding()
+            }
         }
-      }
+        .navigationTitle(location.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadForecast()
+        }
     }
-    .onAppear { Task { await load() } }
-  }
 
-  private func load() async {
-    isLoading = true
-    data = try? await svc.fetchData(
-      for: Date(), lat: location.latitude, lon: location.longitude
-    )
-    isLoading = false
-  }
+    private func loadForecast() async {
+        isLoading = true
+        defer { isLoading = false }
 
-  private func formatTime(_ s: String) -> String {
-    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd'T'HH:mm"
-    guard let dt = f.date(from: s) else { return s }
-    f.dateFormat = "h:mm a"
-    return f.string(from: dt)
-  }
+        do {
+            forecast = try await SunsetService.shared.fetchData(
+                for: Date(),
+                lat: location.latitude,
+                lon: location.longitude
+            )
+            print("[LocationDetail] fetched forecast for \(location.displayName)")
+        } catch {
+            loadError = error
+            print("[LocationDetail] error fetching:", error)
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        LocationDetailView(
+            location: Location(
+                id: "0",
+                name: "Sample City",
+                latitude: 0,
+                longitude: 0,
+                country: "",
+                admin1: nil,
+                timeZoneIdentifier: TimeZone.current.identifier
+            )
+        )
+        .environmentObject(FavoritesStore())  // if your detail view needs it elsewhere
+    }
 }

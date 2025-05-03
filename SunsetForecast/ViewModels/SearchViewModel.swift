@@ -1,12 +1,11 @@
-// SunsetForecast/ViewModels/SearchViewModel.swift
-
 import Foundation
+import CoreLocation
 
 @MainActor
 class SearchViewModel: ObservableObject {
-    @Published var searchText = ""
-    @Published var searchResults: [Location] = []
-    @Published var isLoading = false
+    @Published var searchText     = ""
+    @Published var searchResults  = [Location]()
+    @Published var isLoading      = false
     @Published var error: Error?
 
     private let service: LocationSearchService
@@ -15,10 +14,13 @@ class SearchViewModel: ObservableObject {
         self.service = service
     }
 
-    /// Performs a geocoding query when `searchText` changes.
-    /// No longer `private`, so your view can `await` it directly.
+    /// Called from your SearchView’s .onChange
+    func updateSearch(text: String) {
+        searchText = text
+    }
+
+    /// Actually performs the API call
     func performSearch() async {
-        // empty text -> clear results
         guard !searchText.isEmpty else {
             searchResults = []
             return
@@ -35,5 +37,12 @@ class SearchViewModel: ObservableObject {
             self.error = error
             searchResults = []
         }
+    }
+
+    /// What happens when the user taps a suggestion.
+    /// For now just returns the same Location, but you can
+    /// reverse-geocode to refine tz/display-name here.
+    func selectLocation(_ suggestion: Location) async -> Location {
+        return suggestion
     }
 }
