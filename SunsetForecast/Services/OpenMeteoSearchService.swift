@@ -1,73 +1,35 @@
-// SunsetForecast/Services/OpenMeteoSearchService.swift
-
 import Foundation
 
-/// Uses Open-Meteo’s free geocoding endpoint
+/// Uses Open-Meteo geocoding API to lookup up to 10 places.
 struct OpenMeteoSearchService: LocationSearchService {
     func search(_ query: String) async throws -> [Location] {
-        guard
-          let encoded = query.addingPercentEncoding(
-                            withAllowedCharacters: .urlQueryAllowed
-                        ),
-          var comps = URLComponents(
-                            string: "https://geocoding-api.open-meteo.com/v1/search"
-                        )
-        else {
-            throw SearchError.invalidURL
+        let base = "https://geocoding-api.open-meteo.com/v1/search"
+        let q = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlStr = "\(base)?name=\(q)&count=10&language=en&format=json"
+        guard let url = URL(string: urlStr) else {
+            throw URLError(.badURL)
         }
-
-        comps.queryItems = [
-          .init(name: "name",     value: encoded),
-          .init(name: "count",    value: "5"),
-          .init(name: "language", value: "en"),
-          .init(name: "format",   value: "json")
-        ]
-
-        guard let url = comps.url else {
-            throw SearchError.invalidURL
+        print("[GeoSearch] ▶️", url)
+        let (data, resp) = try await URLSession.shared.data(from: url)
+        if let http = resp as? HTTPURLResponse {
+            print("[GeoSearch] status", http.statusCode)
         }
-        print("[Search] ▶️ \(url)")
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let wrapper = try JSONDecoder().decode(OMResponse.self, from: data)
-            return wrapper.results?
-              .map { res in
-                // Compose a user-friendly name
-                let parts = [res.name,
-                             res.admin1,
-                             res.country]
-                             .compactMap{ $0 }
-                let title = parts.joined(separator: ", ")
-                return Location(
-                  name: title,
-                  latitude: res.latitude,
-                  longitude: res.longitude
-                )
-              } ?? []
-        } catch let dec as DecodingError {
-            print("[Search] 🛑 decode:", dec)
-            throw SearchError.decodingError(dec)
-        } catch {
-            print("[Search] 🛑 network:", error)
-            throw SearchError.networkError(error)
-        }
-    }
-
-    // MARK: – Geocoding JSON
-
-    private struct OMResponse: Codable {
-        let results: [Result]?
+        struct R: Codable { let results: [Result] }
         struct Result: Codable {
-            let name:      String
-            let latitude:  Double
-            let longitude: Double
-            let country:   String?
-            let admin1:    String?
-
-            private enum CodingKeys: String, CodingKey {
-                case name, latitude, longitude, country
-                case admin1 = "admin1"
-            }
+            let name: String, latitude: Double, longitude: Double
+            let country: String?, admin1: String?
+        }
+        let container = try JSONDecoder().decode(R.self, from: data)
+        return container.results.map { r in
+            Location(
+              id: "\(r.latitude),\(r.longitude)",
+              name: r.name,
+              latitude: r.latitude,
+              longitude: r.longitude,
+              country: r.country ?? "",
+              admin1: r.admin1,
+              timeZoneIdentifier: TimeZone.current.identifier
+            )
         }
     }
 }

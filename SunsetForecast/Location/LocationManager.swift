@@ -1,56 +1,46 @@
-// Location/LocationManager.swift
-
 import Foundation
-import Combine
 import CoreLocation
 
+/// Wraps CLLocationManager to publish the user’s coordinate.
 final class LocationManager: NSObject, ObservableObject {
     @Published var coordinate: CLLocationCoordinate2D?
-
     private let manager = CLLocationManager()
 
     override init() {
         super.init()
         manager.delegate = self
-        print("[LocationManager] Requesting when-in-use authorization")
+        print("[LocationManager] init: requesting when-in-use auth")
         manager.requestWhenInUseAuthorization()
-        print("[LocationManager] Starting location updates")
-        manager.startUpdatingLocation()
     }
 
-    /// Call this to re-request permission & updates (e.g. on a button tap)
+    /// Call to start / restart updates
     func requestLocation() {
-        print("[LocationManager] requestLocation() called — status:", manager.authorizationStatus.rawValue)
+        print("[LocationManager] requestLocation() status:",
+              manager.authorizationStatus.rawValue)
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
     }
 }
 
 extension LocationManager: CLLocationManagerDelegate {
-    func locationManager(_ manager: CLLocationManager,
-                         didChangeAuthorization status: CLAuthorizationStatus) {
-        print("[LocationManager] Authorization changed to:", status.rawValue)
-        if status == .authorizedWhenInUse || status == .authorizedAlways {
-            manager.startUpdatingLocation()
+    func locationManager(_ m: CLLocationManager, didChangeAuthorization s: CLAuthorizationStatus) {
+        print("[LocationManager] auth changed to", s.rawValue)
+        if s == .authorizedWhenInUse || s == .authorizedAlways {
+            m.startUpdatingLocation()
         }
     }
 
-    func locationManager(_ manager: CLLocationManager,
-                         didUpdateLocations locations: [CLLocation]) {
-        guard let loc = locations.first else {
-            print("[LocationManager] didUpdateLocations: no locations")
-            return
-        }
-        print("[LocationManager] didUpdateLocations:", loc.coordinate)
+    func locationManager(_ m: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
+        guard let loc = locs.first else { return }
+        let c = loc.coordinate
+        print("[LocationManager] didUpdateLocations", c)
         DispatchQueue.main.async {
-            self.coordinate = loc.coordinate
+            self.coordinate = c
         }
-        manager.stopUpdatingLocation()
+        m.stopUpdatingLocation()  // one-shot
     }
 
-    func locationManager(_ manager: CLLocationManager,
-                         didFailWithError error: Error) {
-        let ns = error as NSError
-        print("[LocationManager] didFailWithError:", ns.domain, "code", ns.code, "-", ns.localizedDescription)
+    func locationManager(_ m: CLLocationManager, didFailWithError e: Error) {
+        print("[LocationManager] fail:", e.localizedDescription)
     }
 }

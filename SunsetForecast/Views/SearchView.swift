@@ -1,65 +1,62 @@
 import SwiftUI
 
 struct SearchView: View {
-    @StateObject var vm: SearchViewModel
-    @EnvironmentObject var store: FavoritesStore
-    @State private var selected: Location? = nil
+    @EnvironmentObject var favoritesStore: FavoritesStore
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel = SearchViewModel()
 
     var body: some View {
-        VStack {
-            // Search bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
-                TextField("Search for a city...", text: $vm.query)
-                    .autocapitalization(.words)
-                    .disableAutocorrection(true)
-            }
-            .padding(8)
-            .background(Color(.secondarySystemFill))
-            .cornerRadius(8)
-            .padding(.horizontal)
+        NavigationStack {
+            VStack(spacing: 16) {
+                // Title
+                Text("Sunsets")
+                    .font(.largeTitle.bold())
+                    .foregroundColor(.white)
+                    .padding(.top)
 
-            // Suggestions
-            if vm.isLoading {
-                ProgressView().padding()
-            } else if let err = vm.errorMessage {
-                Text("Error: \(err)")
-                  .foregroundColor(.red)
-                  .padding()
-            } else {
-                List(vm.suggestions) { loc in
+                // Search field
+                TextField("Search cities…", text: $viewModel.searchText)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+                    .onChange(of: viewModel.searchText) { _ in
+                        Task { await viewModel.performSearch() }
+                    }
+
+                // Suggestions list
+                List(viewModel.searchResults, id: \.id) { suggestion in
                     Button {
-                        print("[SearchView] Selected", loc.name)
-                        selected = loc
+                        favoritesStore.add(suggestion)
+                        dismiss()
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(loc.name)
-                                    .font(.body)
-                                // Preview placeholder (score & time)
-                                Text("Loading...")
+                                Text(suggestion.displayName)
+                                    .foregroundColor(.primary)
+                                Text(localTime(for: suggestion))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                             Spacer()
                         }
-                        .padding(.vertical, 8)
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .listStyle(.plain)
             }
+            .background(Color.black.ignoresSafeArea())
         }
-        // Full-screen detail for tapped location
-        .sheet(item: $selected) { loc in
-            LocationDetailView(location: loc) {
-                store.add(loc)
-                selected = nil
-            } onCancel: {
-                selected = nil
-            }
-        }
-        .navigationTitle("Search")
+    }
+
+    private func localTime(for loc: Location) -> String {
+        let fmt = DateFormatter()
+        fmt.timeStyle = .short
+        fmt.timeZone = loc.timeZone ?? .autoupdatingCurrent
+        return fmt.string(from: Date())
+    }
+}
+
+#Preview {
+    NavigationStack {
+        SearchView()
+            .environmentObject(FavoritesStore())
     }
 }
