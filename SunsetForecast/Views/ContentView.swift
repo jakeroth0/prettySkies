@@ -30,10 +30,11 @@ struct ContentView: View {
     @State private var isLoading     = false
     @State private var errorMessage: String?
     @State private var lastCoord: CLLocationCoordinate2D?
+    @State private var showFavorites = false
 
     var body: some View {
         ZStack {
-            // MARK: Background Gradient
+            // Always show the background gradient
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color(hex: "#FF6B5C"),
@@ -45,14 +46,21 @@ struct ContentView: View {
             )
             .ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 24) {
-                    headerView
-                    todayScoreView
-                    variableCardView
-                    forecastCardView
+            // Conditionally show content or loading spinner
+            if let coord = locationManager.coordinate, coord.latitude != 0.0, coord.longitude != 0.0 {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        headerView
+                        todayScoreView
+                        variableCardView
+                        forecastCardView
+                    }
+                    .padding()
                 }
-                .padding()
+            } else {
+                ProgressView("Waiting for location...")
+                    .scaleEffect(1.5)
+                    .tint(.white)
             }
 
             // loading & error overlays
@@ -73,7 +81,8 @@ struct ContentView: View {
         .onAppear { locationManager.requestLocation() }
         .onReceive(locationManager.$coordinate) { coordOpt in
             guard let coord = coordOpt,
-                  coord.latitude  != lastCoord?.latitude ||
+                  coord.latitude != 0.0, coord.longitude != 0.0,
+                  coord.latitude != lastCoord?.latitude ||
                   coord.longitude != lastCoord?.longitude
             else { return }
 
@@ -82,6 +91,19 @@ struct ContentView: View {
                 await fetchLocationName(coord)
                 await loadData(for: coord)
             }
+        }
+        .overlay(
+            VStack {
+                Spacer()
+                BottomNavBar(
+                    onMapTap: {},
+                    onLocationTap: {},
+                    onFavoritesTap: { showFavorites = true }
+                )
+            }
+        )
+        .sheet(isPresented: $showFavorites) {
+            FavoritesView()
         }
     }
 
