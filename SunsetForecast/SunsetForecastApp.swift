@@ -7,7 +7,9 @@ struct SunsetForecastApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-              .environmentObject(favStore)
+                .environmentObject(favStore)
+                .preferredColorScheme(.dark) // Force dark mode for better aesthetics
+                .accentColor(.white)
         }
     }
 }
