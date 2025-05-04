@@ -1,9 +1,12 @@
-// SunsetForecast/Views/LocationDetailView.swift
-
 import SwiftUI
+import CoreLocation
 
-struct LocationDetailView: View {
+struct LocationPreviewView: View {
+    // MARK: - Properties
+    
     let location: Location
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var favoritesStore: FavoritesStore
     
     @State private var forecasts: [DailyForecast] = []
     @State private var todayCloudMean: Double?
@@ -13,11 +16,15 @@ struct LocationDetailView: View {
     @State private var sunsetMoment: Date?
     @State private var goldenMoment: Date?
     @State private var isLoading = false
-    @State private var loadError: Error?
-
+    @State private var errorMessage: String?
+    
+    private let sunsetService = SunsetService.shared
+    
+    // MARK: - View
+    
     var body: some View {
         ZStack {
-            // Background gradient
+            // Background gradient - using sunset colors
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color(hex: "#FF6B5C"),
@@ -28,13 +35,13 @@ struct LocationDetailView: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-
+            
             // Content
             ScrollView {
                 VStack(spacing: 24) {
                     // Location header
                     VStack(spacing: 4) {
-                        Text("Sunset Forecast")
+                        Text("Preview")
                             .font(.headline)
                             .foregroundColor(.white.opacity(0.7))
                         Text(location.displayName)
@@ -62,8 +69,8 @@ struct LocationDetailView: View {
             }
             
             // Error message
-            if let err = loadError {
-                Text(err.localizedDescription)
+            if let err = errorMessage {
+                Text(err)
                     .foregroundColor(.red)
                     .padding()
                     .background(Color.white.opacity(0.8))
@@ -71,7 +78,31 @@ struct LocationDetailView: View {
                     .padding()
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            // Cancel button
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Cancel") {
+                    dismiss()
+                }
+                .foregroundColor(.white)
+            }
+            
+            // Add button
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Add") {
+                    // Check if we've already reached the limit of 10 favorites
+                    if favoritesStore.favorites.count < 10 {
+                        favoritesStore.add(location)
+                        dismiss()
+                    } else {
+                        errorMessage = "You can only save up to 10 favorite locations"
+                    }
+                }
+                .foregroundColor(.white)
+                .disabled(isLoading)
+            }
+        }
         .task {
             await loadData()
         }
@@ -222,7 +253,7 @@ struct LocationDetailView: View {
         
         do {
             // Fetch weather data
-            let resp = try await SunsetService.shared.fetchData(
+            let resp = try await sunsetService.fetchData(
                 for: Date(),
                 lat: location.latitude,
                 lon: location.longitude
@@ -296,7 +327,7 @@ struct LocationDetailView: View {
                     pm25Value = fallback.pm25
                 }
             } catch {
-                print("[LocationDetail] Air quality error:", error)
+                print("[LocationPreview] Air quality error:", error)
                 // Continue without air quality data
             }
             
@@ -327,12 +358,12 @@ struct LocationDetailView: View {
             // Commit
             await MainActor.run {
                 forecasts = list
-                loadError = nil
-                print("[LocationDetail] built \(list.count) days forecast for \(location.displayName)")
+                errorMessage = nil
+                print("[LocationPreview] built \(list.count) days forecast for \(location.displayName)")
             }
         } catch {
-            print("[LocationDetail] error:", error)
-            await MainActor.run { loadError = error }
+            print("[LocationPreview] error:", error)
+            await MainActor.run { errorMessage = error.localizedDescription }
         }
     }
     
@@ -367,17 +398,17 @@ struct LocationDetailView: View {
 
 #Preview {
     NavigationStack {
-        LocationDetailView(
+        LocationPreviewView(
             location: Location(
-                id: "0",
-                name: "Sample City",
-                latitude: 0,
-                longitude: 0,
-                country: "",
-                admin1: nil,
-                timeZoneIdentifier: TimeZone.current.identifier
+                id: "preview-location",
+                name: "San Francisco",
+                latitude: 37.7749,
+                longitude: -122.4194,
+                country: "US",
+                admin1: "California",
+                timeZoneIdentifier: "America/Los_Angeles"
             )
         )
         .environmentObject(FavoritesStore())
     }
-}
+} 

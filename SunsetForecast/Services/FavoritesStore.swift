@@ -6,6 +6,9 @@ import Combine
 /// Holds your saved locations and persists them via UserDefaults
 final class FavoritesStore: ObservableObject {
     @Published private(set) var favorites: [Location] = []
+    
+    // Maximum number of favorites allowed
+    static let maxFavorites = 10
 
     private let key = "sunsetForecast_favorites"
     private var cancellables = Set<AnyCancellable>()
@@ -23,11 +26,20 @@ final class FavoritesStore: ObservableObject {
 
     func add(_ loc: Location) {
         guard !favorites.contains(loc) else { return }
+        guard favorites.count < Self.maxFavorites else { return }
         favorites.append(loc)
     }
 
     func remove(_ loc: Location) {
         favorites.removeAll { $0.id == loc.id }
+    }
+    
+    func canAddMore() -> Bool {
+        return favorites.count < Self.maxFavorites
+    }
+    
+    func move(from source: IndexSet, to destination: Int) {
+        favorites.move(fromOffsets: source, toOffset: destination)
     }
 
     private func load() {
