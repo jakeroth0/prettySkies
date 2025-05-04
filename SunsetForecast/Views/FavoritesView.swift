@@ -53,6 +53,9 @@ struct FavoritesView: View {
                                     .autocorrectionDisabled()
                                     .focused($isSearchFieldFocused)
                                     .submitLabel(.search)
+                                    .onTapGesture {
+                                        isSearchFieldFocused = true
+                                    }
                             }
                             .padding(10)
                             .background(Color.black)
@@ -60,6 +63,9 @@ struct FavoritesView: View {
                                 RoundedRectangle(cornerRadius: 10)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
+                            .onTapGesture {
+                                isSearchFieldFocused = true
+                            }
                             
                             if isSearchActive {
                                 Button("Cancel") {
@@ -87,36 +93,45 @@ struct FavoritesView: View {
                         // MARK: - Content Area
                         ZStack(alignment: .top) {
                             // MARK: - Favorite Locations
-                            ScrollView {
-                                VStack(spacing: 16) {
-                                    // — My Location Card —
+                            List {
+                                // — My Location Card —
+                                Button {
+                                    // Navigate to home screen when current location is tapped
+                                    TabViewSelection.shared.selectedTab = .home
+                                    selected = nil
+                                    locMgr.requestLocation()
+                                } label: {
+                                    FavRow(location: currentLocation(), isCurrentLocation: true)
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                                
+                                // — Saved Favorites —
+                                ForEach(favoritesStore.favorites) { loc in
                                     Button {
-                                        selected = nil
-                                        locMgr.requestLocation()
+                                        selected = loc
                                     } label: {
-                                        FavRow(location: currentLocation())
+                                        FavRow(location: loc, isCurrentLocation: false)
                                     }
-                                    
-                                    // — Saved Favorites —
-                                    ForEach(favoritesStore.favorites) { loc in
-                                        Button {
-                                            selected = loc
-                                        } label: {
-                                            FavRow(location: loc)
-                                        }
-                                        .swipeActions {
-                                            Button(role: .destructive) {
-                                                withAnimation {
-                                                    favoritesStore.remove(loc)
-                                                }
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                                }
+                                .onDelete { indexSet in
+                                    withAnimation {
+                                        // Convert IndexSet to array of locations to delete
+                                        let locationsToDelete = indexSet.map { favoritesStore.favorites[$0] }
+                                        // Remove each location
+                                        for location in locationsToDelete {
+                                            favoritesStore.remove(location)
                                         }
                                     }
                                 }
-                                .padding(.vertical)
                             }
+                            .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
+                            .background(Color.clear)
                             .opacity(isSearchActive ? 0 : 1)
                             
                             // MARK: - Search Results
@@ -201,6 +216,7 @@ struct FavoritesView: View {
 // MARK: - FavRow Component
 private struct FavRow: View {
     let location: Location
+    let isCurrentLocation: Bool
     @State private var localTime = "--:--"
     @State private var score = 0
     @State private var aod: Double?
@@ -210,9 +226,16 @@ private struct FavRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(location.displayName)
-                    .font(.headline)
-                    .foregroundColor(.white)
+                HStack {
+                    Text(location.displayName)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    if isCurrentLocation {
+                        Text("📍")
+                            .font(.caption)
+                    }
+                }
                 Text(localTime)
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.7))
@@ -240,8 +263,8 @@ private struct FavRow: View {
         .background(
             LinearGradient(
                 colors: [
-                    Color(.systemGray5).opacity(0.6),
-                    Color(.systemGray6).opacity(0.3)
+                    isCurrentLocation ? Color(.systemBlue).opacity(0.4) : Color(.systemGray5).opacity(0.6),
+                    isCurrentLocation ? Color(.systemBlue).opacity(0.2) : Color(.systemGray6).opacity(0.3)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
