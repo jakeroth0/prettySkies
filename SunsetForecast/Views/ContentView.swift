@@ -31,81 +31,98 @@ struct ContentView: View {
     @State private var isLoading     = false
     @State private var errorMessage: String?
     @State private var lastCoord: CLLocationCoordinate2D?
-    @State private var selectedTab = 0
+    @ObservedObject private var tabSelection = TabViewSelection.shared
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // Details View
-            ZStack {
-                // Always show the background gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#FF6B5C"),
-                        Color(hex: "#FFB35C"),
-                        Color(hex: "#FFD56B")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+        ZStack(alignment: .bottom) {
+            // Main content based on selected tab
+            Group {
+                if tabSelection.selectedTab == .home {
+                    // Home / Details View
+                    ZStack {
+                        // Always show the background gradient
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(hex: "#FF6B5C"),
+                                Color(hex: "#FFB35C"),
+                                Color(hex: "#FFD56B")
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea()
 
-                // Conditionally show content or loading spinner
-                if let coord = locationManager.coordinate, coord.latitude != 0.0, coord.longitude != 0.0 {
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            headerView
-                            todayScoreView
-                            variableCardView
-                            forecastCardView
+                        // Conditionally show content or loading spinner
+                        if let coord = locationManager.coordinate, coord.latitude != 0.0, coord.longitude != 0.0 {
+                            ScrollView {
+                                VStack(spacing: 24) {
+                                    headerView
+                                    todayScoreView
+                                    variableCardView
+                                    forecastCardView
+                                }
+                                .padding()
+                            }
+                        } else {
+                            ProgressView("Waiting for location...")
+                                .scaleEffect(1.5)
+                                .tint(.white)
                         }
-                        .padding()
+
+                        // loading & error overlays
+                        if isLoading {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                                .tint(.white)
+                        }
+                        if let err = errorMessage {
+                            Text(err)
+                                .foregroundColor(.red)
+                                .padding()
+                                .background(Color.white.opacity(0.8))
+                                .cornerRadius(8)
+                                .padding()
+                        }
                     }
+                    .onAppear { locationManager.requestLocation() }
+                    .onReceive(locationManager.$coordinate) { coordOpt in
+                        guard let coord = coordOpt,
+                              coord.latitude != 0.0, coord.longitude != 0.0,
+                              coord.latitude != lastCoord?.latitude ||
+                              coord.longitude != lastCoord?.longitude
+                        else { return }
+
+                        lastCoord = coord
+                        Task {
+                            await fetchLocationName(coord)
+                            await loadData(for: coord)
+                        }
+                    }
+                } else if tabSelection.selectedTab == .favorites {
+                    // Favorites View
+                    FavoritesView()
                 } else {
-                    ProgressView("Waiting for location...")
-                        .scaleEffect(1.5)
-                        .tint(.white)
-                }
-
-                // loading & error overlays
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                        .tint(.white)
-                }
-                if let err = errorMessage {
-                    Text(err)
-                        .foregroundColor(.red)
-                        .padding()
-                        .background(Color.white.opacity(0.8))
-                        .cornerRadius(8)
-                        .padding()
+                    // Map view (placeholder)
+                    ZStack {
+                        Color.black.ignoresSafeArea()
+                        Text("Map View Coming Soon")
+                            .foregroundColor(.white)
+                    }
                 }
             }
-            .onAppear { locationManager.requestLocation() }
-            .onReceive(locationManager.$coordinate) { coordOpt in
-                guard let coord = coordOpt,
-                      coord.latitude != 0.0, coord.longitude != 0.0,
-                      coord.latitude != lastCoord?.latitude ||
-                      coord.longitude != lastCoord?.longitude
-                else { return }
-
-                lastCoord = coord
-                Task {
-                    await fetchLocationName(coord)
-                    await loadData(for: coord)
-                }
-            }
-            .tabItem {
-                Label("Details", systemImage: "sun.max.fill")
-            }
-            .tag(0)
             
-            // Favorites View
-            FavoritesView()
-                .tabItem {
-                    Label("Locations", systemImage: "list.bullet")
+            // Bottom navigation bar
+            BottomNavBar(
+                onMapTap: {
+                    // Handle map tap
+                },
+                onLocationTap: {
+                    // Handle location tap
+                },
+                onFavoritesTap: {
+                    // Handle favorites tap
                 }
-                .tag(1)
+            )
         }
     }
 
