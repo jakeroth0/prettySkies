@@ -11,6 +11,7 @@ struct FavoritesView: View {
     @StateObject private var searchVM = SearchViewModel()
     @State private var isSearchActive = false
     @State private var selected: Location?
+    @State private var previewLocation: Location?
     @FocusState private var isSearchFieldFocused: Bool
     
     // Get the safe area insets to ensure proper positioning
@@ -97,11 +98,20 @@ struct FavoritesView: View {
                                     }
                                     
                                     // — Saved Favorites —
-                                    ForEach(favoritesStore.favorites, id: \.self) { loc in
+                                    ForEach(favoritesStore.favorites) { loc in
                                         Button {
                                             selected = loc
                                         } label: {
                                             FavRow(location: loc)
+                                        }
+                                        .swipeActions {
+                                            Button(role: .destructive) {
+                                                withAnimation {
+                                                    favoritesStore.remove(loc)
+                                                }
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
                                         }
                                     }
                                 }
@@ -117,7 +127,7 @@ struct FavoritesView: View {
                                             SearchResultRow(location: location) {
                                                 Task {
                                                     let loc = await searchVM.selectLocation(location)
-                                                    favoritesStore.add(loc)
+                                                    previewLocation = loc
                                                     isSearchFieldFocused = false
                                                     searchVM.searchText = ""
                                                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -143,6 +153,14 @@ struct FavoritesView: View {
                 )) {
                     if let loc = selected {
                         LocationDetailView(location: loc)
+                    }
+                }
+                .navigationDestination(isPresented: Binding(
+                    get: { previewLocation != nil },
+                    set: { if !$0 { previewLocation = nil } }
+                )) {
+                    if let loc = previewLocation {
+                        LocationPreviewView(location: loc)
                     }
                 }
             }
