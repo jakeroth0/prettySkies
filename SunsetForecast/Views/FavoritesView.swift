@@ -10,16 +10,21 @@ struct FavoritesView: View {
     @StateObject private var locMgr = LocationManager()
     @StateObject private var searchVM = SearchViewModel()
     @State private var isSearchActive = false
-    @State private var selected: Location?
-    @State private var previewLocation: Location?
     @FocusState private var isSearchFieldFocused: Bool
+    
+    // Navigation path for programmatic navigation
+    @State private var navigationPath = NavigationPath()
     
     // Get the safe area insets to ensure proper positioning
     @Environment(\.safeAreaInsets) private var safeAreaInsets
     
+    // Add state for fullscreen view
+    @State private var showFullscreenFavorites = false
+    @State private var fullscreenInitialLocation: Location?
+    
     var body: some View {
         GeometryReader { geometry in
-            NavigationStack {
+            NavigationStack(path: $navigationPath) {
                 ZStack {
                     Color.black.ignoresSafeArea()
                     
@@ -36,7 +41,22 @@ struct FavoritesView: View {
                                 .font(.largeTitle.bold())
                                 .foregroundColor(.white)
                                 .padding(.horizontal)
+                            
                             Spacer()
+                            
+                            // Add fullscreen button
+                            if !favoritesStore.favorites.isEmpty && !isSearchActive {
+                                Button {
+                                    // Use first favorite as initial location
+                                    fullscreenInitialLocation = favoritesStore.favorites.first
+                                    showFullscreenFavorites = true
+                                } label: {
+                                    Image(systemName: "rectangle.on.rectangle")
+                                        .font(.title3)
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.horizontal)
+                            }
                         }
                         .padding(.top, isSearchActive ? 0 : 8)
                         .opacity(isSearchActive ? 0 : 1)
@@ -96,25 +116,52 @@ struct FavoritesView: View {
                             List {
                                 // — My Location Card —
                                 Button {
-                                    // Navigate to home screen when current location is tapped
-                                    TabViewSelection.shared.selectedTab = .home
-                                    selected = nil
-                                    locMgr.requestLocation()
+                                    print("[FavoritesView] Tapped on Current Location")
+                                    
+                                    // First, clear navigation path if any
+                                    navigationPath = NavigationPath()
+                                    
+                                    // Reset the home page index to show the current location (first page)
+                                    TabViewSelection.shared.homePageIndex = 0
+                                    
+                                    // Then, after a brief delay, switch to the home tab
+                                    // This ensures we're already out of any navigation context
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        withAnimation {
+                                            TabViewSelection.shared.selectedTab = .home
+                                        }
+                                        // Request location update
+                                        locMgr.requestLocation()
+                                    }
                                 } label: {
                                     FavRow(location: currentLocation(), isCurrentLocation: true)
                                 }
+                                .buttonStyle(PlainButtonStyle()) // Critical for making taps register
                                 .listRowBackground(Color.clear)
                                 .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                                 
                                 // — Saved Favorites —
                                 ForEach(favoritesStore.favorites) { loc in
                                     Button {
-                                        selected = loc
+                                        print("[FavoritesView] Tapped on favorite: \(loc.displayName)")
+                                        
+                                        // Use direct navigation to LocationDetailView 
+                                        // We need to add a small delay to ensure the button tap is
+                                        // completed before navigating
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            navigationPath.append(loc)
+                                        }
                                     } label: {
                                         FavRow(location: loc, isCurrentLocation: false)
                                     }
+                                    .buttonStyle(PlainButtonStyle()) // Critical for making taps register
                                     .listRowBackground(Color.clear)
                                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                    .onLongPressGesture {
+                                        // Open fullscreen view with this location
+                                        fullscreenInitialLocation = loc
+                                        showFullscreenFavorites = true
+                                    }
                                 }
                                 .onDelete { indexSet in
                                     for index in indexSet {
@@ -136,12 +183,25 @@ struct FavoritesView: View {
                                         ForEach(searchVM.searchResults, id: \.id) { location in
                                             SearchResultRow(location: location) {
                                                 Task {
-                                                    let loc = await searchVM.selectLocation(location)
-                                                    previewLocation = loc
-                                                    isSearchFieldFocused = false
-                                                    searchVM.searchText = ""
-                                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                                        isSearchActive = false
+                                                    do {
+                                                        // Get the full location details
+                                                        let loc = await searchVM.selectLocation(location)
+                                                        print("[FavoritesView] Selected search result: \(loc.displayName)")
+                                                        
+                                                        // Clear search UI
+                                                        isSearchFieldFocused = false
+                                                        searchVM.searchText = ""
+                                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                                            isSearchActive = false
+                                                        }
+                                                        
+                                                        // Slight delay to ensure UI transitions finish
+                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                            // Navigate to the preview view
+                                                            navigationPath.append(SearchLocationPreview(location: loc))
+                                                        }
+                                                    } catch {
+                                                        print("[FavoritesView] Error loading search result details: \(error)")
                                                     }
                                                 }
                                             }
@@ -157,21 +217,17 @@ struct FavoritesView: View {
                         }
                     }
                 }
-                .navigationDestination(isPresented: Binding(
-                    get: { selected != nil },
-                    set: { if !$0 { selected = nil } }
-                )) {
-                    if let loc = selected {
-                        LocationDetailView(location: loc)
-                    }
+                
+                // MARK: - Navigation Destinations
+                // Navigation destination for locations
+                .navigationDestination(for: Location.self) { location in
+                    // Full detail view for locations
+                    LocationDetailView(location: location)
                 }
-                .navigationDestination(isPresented: Binding(
-                    get: { previewLocation != nil },
-                    set: { if !$0 { previewLocation = nil } }
-                )) {
-                    if let loc = previewLocation {
-                        LocationPreview(location: loc)
-                    }
+                
+                // Add a separate destination for search previews
+                .navigationDestination(for: SearchLocationPreview.self) { wrapper in
+                    LocationPreview(location: wrapper.location)
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: isSearchActive)
@@ -188,6 +244,15 @@ struct FavoritesView: View {
                     if !newValue.isEmpty {
                         await searchVM.performSearch()
                     }
+                }
+            }
+            .sheet(isPresented: $showFullscreenFavorites) {
+                if let location = fullscreenInitialLocation {
+                    FullscreenFavoritesView(
+                        initialLocation: location,
+                        favoritesStore: favoritesStore
+                    )
+                    .environmentObject(favoritesStore)
                 }
             }
         }
@@ -377,6 +442,21 @@ private struct FavRow: View {
         let hourPrefix = parts[1].split(separator: ":")[0]
         let lookup = "\(parts[0])T\(hourPrefix):"
         return hours.firstIndex { $0.hasPrefix(lookup) }
+    }
+}
+
+// MARK: - Search Location Preview Wrapper
+// This wrapper allows us to distinguish between regular locations and search result locations
+// for different navigation destinations
+struct SearchLocationPreview: Hashable {
+    let location: Location
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(location.id)
+    }
+    
+    static func == (lhs: SearchLocationPreview, rhs: SearchLocationPreview) -> Bool {
+        return lhs.location.id == rhs.location.id
     }
 }
 
