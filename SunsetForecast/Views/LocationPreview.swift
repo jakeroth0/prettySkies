@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreLocation
 
-struct LocationPreviewView: View {
+struct LocationPreview: View {
     // MARK: - Properties
     
     let location: Location
@@ -398,7 +398,7 @@ struct LocationPreviewView: View {
 
 #Preview {
     NavigationStack {
-        LocationPreviewView(
+        LocationPreview(
             location: Location(
                 id: "preview-location",
                 name: "San Francisco",

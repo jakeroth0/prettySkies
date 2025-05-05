@@ -104,8 +104,7 @@ struct FavoritesView: View {
                                     FavRow(location: currentLocation(), isCurrentLocation: true)
                                 }
                                 .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                                 
                                 // — Saved Favorites —
                                 ForEach(favoritesStore.favorites) { loc in
@@ -115,23 +114,19 @@ struct FavoritesView: View {
                                         FavRow(location: loc, isCurrentLocation: false)
                                     }
                                     .listRowBackground(Color.clear)
-                                    .listRowSeparator(.hidden)
-                                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                                 }
                                 .onDelete { indexSet in
-                                    withAnimation {
-                                        // Convert IndexSet to array of locations to delete
-                                        let locationsToDelete = indexSet.map { favoritesStore.favorites[$0] }
-                                        // Remove each location
-                                        for location in locationsToDelete {
-                                            favoritesStore.remove(location)
+                                    for index in indexSet {
+                                        withAnimation {
+                                            let locationToRemove = favoritesStore.favorites[index]
+                                            favoritesStore.remove(locationToRemove)
                                         }
                                     }
                                 }
                             }
                             .listStyle(.plain)
                             .scrollContentBackground(.hidden)
-                            .background(Color.clear)
                             .opacity(isSearchActive ? 0 : 1)
                             
                             // MARK: - Search Results
@@ -175,7 +170,7 @@ struct FavoritesView: View {
                     set: { if !$0 { previewLocation = nil } }
                 )) {
                     if let loc = previewLocation {
-                        LocationPreviewView(location: loc)
+                        LocationPreview(location: loc)
                     }
                 }
             }
@@ -222,6 +217,12 @@ private struct FavRow: View {
     @State private var aod: Double?
     @State private var errorLoadingScore = false
     @State private var isLoading = false
+    
+    // Add initializer with default parameter
+    init(location: Location, isCurrentLocation: Bool = false) {
+        self.location = location
+        self.isCurrentLocation = isCurrentLocation
+    }
     
     var body: some View {
         HStack {
