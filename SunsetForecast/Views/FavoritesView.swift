@@ -87,36 +87,38 @@ struct FavoritesView: View {
                         // MARK: - Content Area
                         ZStack(alignment: .top) {
                             // MARK: - Favorite Locations
-                            ScrollView {
-                                VStack(spacing: 16) {
-                                    // — My Location Card —
+                            List {
+                                // — My Location Card —
+                                Button {
+                                    selected = nil
+                                    locMgr.requestLocation()
+                                } label: {
+                                    FavRow(location: currentLocation())
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                
+                                // — Saved Favorites —
+                                ForEach(favoritesStore.favorites) { loc in
                                     Button {
-                                        selected = nil
-                                        locMgr.requestLocation()
+                                        selected = loc
                                     } label: {
-                                        FavRow(location: currentLocation())
+                                        FavRow(location: loc)
                                     }
-                                    
-                                    // — Saved Favorites —
-                                    ForEach(favoritesStore.favorites) { loc in
-                                        Button {
-                                            selected = loc
-                                        } label: {
-                                            FavRow(location: loc)
-                                        }
-                                        .swipeActions {
-                                            Button(role: .destructive) {
-                                                withAnimation {
-                                                    favoritesStore.remove(loc)
-                                                }
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                }
+                                .onDelete { indexSet in
+                                    for index in indexSet {
+                                        withAnimation {
+                                            let locationToRemove = favoritesStore.favorites[index]
+                                            favoritesStore.remove(locationToRemove)
                                         }
                                     }
                                 }
-                                .padding(.vertical)
                             }
+                            .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
                             .opacity(isSearchActive ? 0 : 1)
                             
                             // MARK: - Search Results
@@ -160,7 +162,7 @@ struct FavoritesView: View {
                     set: { if !$0 { previewLocation = nil } }
                 )) {
                     if let loc = previewLocation {
-                        LocationPreviewView(location: loc)
+                        LocationPreview(location: loc)
                     }
                 }
             }
