@@ -53,6 +53,9 @@ struct FavoritesView: View {
                                     .autocorrectionDisabled()
                                     .focused($isSearchFieldFocused)
                                     .submitLabel(.search)
+                                    .onTapGesture {
+                                        isSearchFieldFocused = true
+                                    }
                             }
                             .padding(10)
                             .background(Color.black)
@@ -60,6 +63,9 @@ struct FavoritesView: View {
                                 RoundedRectangle(cornerRadius: 10)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
+                            .onTapGesture {
+                                isSearchFieldFocused = true
+                            }
                             
                             if isSearchActive {
                                 Button("Cancel") {
@@ -90,10 +96,12 @@ struct FavoritesView: View {
                             List {
                                 // — My Location Card —
                                 Button {
+                                    // Navigate to home screen when current location is tapped
+                                    TabViewSelection.shared.selectedTab = .home
                                     selected = nil
                                     locMgr.requestLocation()
                                 } label: {
-                                    FavRow(location: currentLocation())
+                                    FavRow(location: currentLocation(), isCurrentLocation: true)
                                 }
                                 .listRowBackground(Color.clear)
                                 .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
@@ -103,7 +111,7 @@ struct FavoritesView: View {
                                     Button {
                                         selected = loc
                                     } label: {
-                                        FavRow(location: loc)
+                                        FavRow(location: loc, isCurrentLocation: false)
                                     }
                                     .listRowBackground(Color.clear)
                                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
@@ -203,18 +211,32 @@ struct FavoritesView: View {
 // MARK: - FavRow Component
 private struct FavRow: View {
     let location: Location
+    let isCurrentLocation: Bool
     @State private var localTime = "--:--"
     @State private var score = 0
     @State private var aod: Double?
     @State private var errorLoadingScore = false
     @State private var isLoading = false
     
+    // Add initializer with default parameter
+    init(location: Location, isCurrentLocation: Bool = false) {
+        self.location = location
+        self.isCurrentLocation = isCurrentLocation
+    }
+    
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(location.displayName)
-                    .font(.headline)
-                    .foregroundColor(.white)
+                HStack {
+                    Text(location.displayName)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    if isCurrentLocation {
+                        Text("📍")
+                            .font(.caption)
+                    }
+                }
                 Text(localTime)
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.7))
@@ -242,8 +264,8 @@ private struct FavRow: View {
         .background(
             LinearGradient(
                 colors: [
-                    Color(.systemGray5).opacity(0.6),
-                    Color(.systemGray6).opacity(0.3)
+                    isCurrentLocation ? Color(.systemBlue).opacity(0.4) : Color(.systemGray5).opacity(0.6),
+                    isCurrentLocation ? Color(.systemBlue).opacity(0.2) : Color(.systemGray6).opacity(0.3)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
