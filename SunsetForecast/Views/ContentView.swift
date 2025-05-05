@@ -54,15 +54,31 @@ struct ContentView: View {
 
                         // Conditionally show content or loading spinner
                         if let coord = locationManager.coordinate, coord.latitude != 0.0, coord.longitude != 0.0 {
-                            ScrollView {
-                                VStack(spacing: 24) {
-                                    headerView
-                                    todayScoreView
-                                    variableCardView
-                                    forecastCardView
+                            // TabView for swiping between location pages
+                            TabView(selection: $tabSelection.homePageIndex) {
+                                // Current location page
+                                ScrollView {
+                                    VStack(spacing: 24) {
+                                        headerView
+                                        todayScoreView
+                                        variableCardView
+                                        forecastCardView
+                                    }
+                                    .padding()
                                 }
-                                .padding()
+                                .tag(0)
+                                
+                                // Favorite location pages
+                                ForEach(favoritesStore.favorites.indices, id: \.self) { index in
+                                    FavoriteLocationView(location: favoritesStore.favorites[index])
+                                        .tag(index + 1)
+                                }
                             }
+                            .onChange(of: tabSelection.homePageIndex) { oldValue, newValue in
+                                print("[ContentView] Home page index changed: \(oldValue) -> \(newValue)")
+                            }
+                            // Default page indicators are hidden
+                            .tabViewStyle(.page(indexDisplayMode: .never))
                         } else {
                             ProgressView("Waiting for location...")
                                 .scaleEffect(1.5)
@@ -98,30 +114,23 @@ struct ContentView: View {
                             await loadData(for: coord)
                         }
                     }
-                } else if tabSelection.selectedTab == .favorites {
+                } else {
                     // Favorites View
                     FavoritesView()
-                } else {
-                    // Map view (placeholder)
-                    ZStack {
-                        Color.black.ignoresSafeArea()
-                        Text("Map View Coming Soon")
-                            .foregroundColor(.white)
-                    }
                 }
             }
             
-            // Bottom navigation bar
+            // Bottom navigation bar with page indicators
             BottomNavBar(
-                onMapTap: {
-                    // Handle map tap
-                },
                 onLocationTap: {
-                    // Handle location tap
+                    // Reset to current location page
+                    tabSelection.homePageIndex = 0
                 },
                 onFavoritesTap: {
                     // Handle favorites tap
-                }
+                },
+                // Pass total number of pages (current location + favorites)
+                totalPages: 1 + favoritesStore.favorites.count
             )
         }
     }
@@ -445,6 +454,558 @@ struct ContentView: View {
         v < 0.1  ? "Low" :
         v < 0.3  ? "Mod" :
                   "High"
+    }
+    
+    // MARK: - Favorite Location View
+    
+    private func favoriteLocationView(for location: Location) -> some View {
+        @State var locationForecast: [DailyForecast] = []
+        @State var locCloudMean: Double?
+        @State var locCloudAtSun: Double?
+        @State var locAod: Double?
+        @State var locHumidity: Double?
+        @State var locSunsetMoment: Date?
+        @State var locGoldenMoment: Date?
+        @State var isLoadingData = false
+        @State var locationError: String?
+        
+        return ScrollView {
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 4) {
+                    Text("Favorite Location")
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.7))
+                    Text(location.displayName)
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                }
+                
+                // Score
+                VStack(spacing: 8) {
+                    if let score = locationForecast.first?.score {
+                        Text("\(score)%")
+                            .font(.system(size: 72, weight: .thin))
+                            .foregroundColor(.white)
+                        HStack(spacing: 16) {
+                            if let g = locGoldenMoment {
+                                Text("Golden \(g.formatted(.dateTime.hour().minute()))")
+                            }
+                            if let s = locSunsetMoment {
+                                Text("Sunset \(s.formatted(.dateTime.hour().minute()))")
+                            }
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                    } else if isLoadingData {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("--")
+                            .font(.system(size: 72, weight: .thin))
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                // Conditions grid (reuse variable card layout)
+                if !locationForecast.isEmpty {
+                    VStack(spacing: 12) {
+                        Text("Today's Conditions")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        LazyVGrid(columns: [GridItem(), GridItem()]) {
+                            // Cloud Mean
+                            if let cm = locCloudMean {
+                                variableTile(icon: "cloud.fill",
+                                             title: "Clouds (mean)",
+                                             label: labelCloudMean(cm))
+                            } else {
+                                variableTile(icon: "cloud.fill",
+                                             title: "Clouds (mean)",
+                                             label: "Loading...")
+                            }
+                            
+                            // Cloud at Sunset
+                            if let cu = locCloudAtSun {
+                                variableTile(icon: "cloud.sun.fill",
+                                             title: "Cloud @ Sun",
+                                             label: "\(Int(cu))%")
+                            } else {
+                                variableTile(icon: "cloud.sun.fill",
+                                             title: "Cloud @ Sun",
+                                             label: "Loading...")
+                            }
+                            
+                            // Humidity
+                            if let hu = locHumidity {
+                                variableTile(icon: "humidity.fill",
+                                             title: "Humidity",
+                                             label: labelHumidity(hu))
+                            } else {
+                                variableTile(icon: "humidity.fill",
+                                             title: "Humidity",
+                                             label: "Loading...")
+                            }
+                            
+                            // Air Quality
+                            if let a = locAod {
+                                variableTile(icon: "aqi.medium",
+                                             title: "Air Quality",
+                                             label: labelAOD(a))
+                            } else {
+                                variableTile(icon: "aqi.medium",
+                                             title: "Air Quality",
+                                             label: "Loading...")
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(16)
+                    
+                    // Forecast
+                    if locationForecast.count > 1 {
+                        VStack(spacing: 12) {
+                            Text("5-Day Forecast")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            ForEach(locationForecast) { d in
+                                HStack {
+                                    Text(d.weekday)
+                                        .frame(width: 40, alignment: .leading)
+                                        .foregroundColor(.white)
+                                    Image(systemName: "cloud.fill")
+                                        .foregroundColor(.white)
+                                    GeometryReader { geo in
+                                        let frac = CGFloat(d.score) / 100
+                                        ZStack(alignment: .leading) {
+                                            Capsule()
+                                                .fill(Color.white.opacity(0.3))
+                                                .frame(height: 6)
+                                            Capsule()
+                                                .fill(Color.white)
+                                                .frame(width: geo.size.width * frac,
+                                                       height: 6)
+                                        }
+                                    }
+                                    .frame(height: 6)
+                                    Text("\(d.score)%")
+                                        .frame(width: 40, alignment: .trailing)
+                                        .foregroundColor(.white)
+                                }
+                                .frame(height: 28)
+                            }
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(16)
+                    }
+                }
+            }
+            .padding()
+            .onAppear {
+                Task {
+                    isLoadingData = true
+                    do {
+                        // Load data for this favorite location
+                        let coord = CLLocationCoordinate2D(
+                            latitude: location.latitude,
+                            longitude: location.longitude
+                        )
+                        
+                        let resp = try await sunsetService.fetchData(
+                            for: Date(),
+                            lat: coord.latitude,
+                            lon: coord.longitude
+                        )
+                        
+                        // Process data similar to loadData method
+                        let dayFmt = DateFormatter()
+                        dayFmt.dateFormat = "yyyy-MM-dd"
+                        var list: [DailyForecast] = []
+                        
+                        for i in resp.daily.time.indices {
+                            guard let d = dayFmt.date(from: resp.daily.time[i]) else { continue }
+                            let wd = d.formatted(.dateTime.weekday(.abbreviated))
+                            let sc: Int
+                            if i == 0, let idx = indexFor(resp.daily.sunset[i], in: resp.hourly.time) {
+                                let hi = resp.hourly.cloudcover_high[idx]
+                                let mi = resp.hourly.cloudcover_mid[idx]
+                                let lo = resp.hourly.cloudcover_low[idx]
+                                let totalCloud = resp.hourly.cloudcover[idx]
+                                
+                                let weightedCloud = (0.4 * hi) + (0.0 * mi) - (0.3 * lo)
+                                sc = 50 + Int(weightedCloud.clamped(to: -50...50))
+                                
+                                locCloudAtSun = totalCloud
+                                locHumidity = resp.hourly.relativehumidity_2m[idx]
+                            } else {
+                                sc = max(0, 100 - Int(resp.daily.cloudcover_mean[i]))
+                            }
+                            list.append(DailyForecast(id: d, weekday: wd, score: sc))
+                        }
+                        
+                        // Set times
+                        let sunFmt = DateFormatter()
+                        sunFmt.dateFormat = "yyyy-MM-dd'T'HH:mm"
+                        if let sunD = sunFmt.date(from: resp.daily.sunset[0]) {
+                            locSunsetMoment = sunD
+                            locGoldenMoment = sunD.addingTimeInterval(-1800)
+                        }
+                        locCloudMean = resp.daily.cloudcover_mean[0]
+                        
+                        // Try to get air quality data
+                        do {
+                            let aqResp = try await AirQualityService.shared.fetchData(
+                                for: Date(), 
+                                lat: coord.latitude, 
+                                lon: coord.longitude
+                            )
+                            
+                            if let sunsetTime = resp.daily.sunset.first {
+                                locAod = AirQualityService.shared.findAODForTime(
+                                    timestamp: sunsetTime,
+                                    in: aqResp
+                                )
+                                
+                                // Apply clarity adjustments
+                                if let idx = list.indices.first, let firstDay = list.first, let aod = locAod {
+                                    let clarityScore = AirQualityService.shared.calculateClarityScore(
+                                        aod: aod, 
+                                        dust: nil, 
+                                        pm25: nil
+                                    )
+                                    
+                                    let finalScore = Int(0.7 * Double(firstDay.score) + 0.3 * Double(clarityScore))
+                                    let clampedScore = max(0, min(100, finalScore))
+                                    
+                                    list[idx] = DailyForecast(
+                                        id: firstDay.id, 
+                                        weekday: firstDay.weekday, 
+                                        score: clampedScore
+                                    )
+                                }
+                            }
+                        } catch {
+                            print("[FavoriteView] Air quality error for \(location.displayName):", error)
+                        }
+                        
+                        // Update UI
+                        locationForecast = list
+                        locationError = nil
+                        
+                    } catch {
+                        print("[FavoriteView] Error loading data for \(location.displayName):", error)
+                        locationError = error.localizedDescription
+                    }
+                    
+                    isLoadingData = false
+                }
+            }
+        }
+    }
+}
+
+// Replace with:
+
+// MARK: - Favorite Location View
+
+struct FavoriteLocationView: View {
+    let location: Location
+    private let sunsetService = SunsetService.shared
+    
+    @State private var locationForecast: [DailyForecast] = []
+    @State private var locCloudMean: Double?
+    @State private var locCloudAtSun: Double?
+    @State private var locAod: Double?
+    @State private var locHumidity: Double?
+    @State private var locSunsetMoment: Date?
+    @State private var locGoldenMoment: Date?
+    @State private var isLoadingData = false
+    @State private var locationError: String?
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 4) {
+                    Text("Favorite Location")
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.7))
+                    Text(location.displayName)
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                }
+                
+                // Score
+                VStack(spacing: 8) {
+                    if let score = locationForecast.first?.score {
+                        Text("\(score)%")
+                            .font(.system(size: 72, weight: .thin))
+                            .foregroundColor(.white)
+                        HStack(spacing: 16) {
+                            if let g = locGoldenMoment {
+                                Text("Golden \(g.formatted(.dateTime.hour().minute()))")
+                            }
+                            if let s = locSunsetMoment {
+                                Text("Sunset \(s.formatted(.dateTime.hour().minute()))")
+                            }
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                    } else if isLoadingData {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("--")
+                            .font(.system(size: 72, weight: .thin))
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                // Conditions grid (reuse variable card layout)
+                if !locationForecast.isEmpty {
+                    VStack(spacing: 12) {
+                        Text("Today's Conditions")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        LazyVGrid(columns: [GridItem(), GridItem()]) {
+                            // Cloud Mean
+                            if let cm = locCloudMean {
+                                variableTile(icon: "cloud.fill",
+                                             title: "Clouds (mean)",
+                                             label: labelCloudMean(cm))
+                            } else {
+                                variableTile(icon: "cloud.fill",
+                                             title: "Clouds (mean)",
+                                             label: "Loading...")
+                            }
+                            
+                            // Cloud at Sunset
+                            if let cu = locCloudAtSun {
+                                variableTile(icon: "cloud.sun.fill",
+                                             title: "Cloud @ Sun",
+                                             label: "\(Int(cu))%")
+                            } else {
+                                variableTile(icon: "cloud.sun.fill",
+                                             title: "Cloud @ Sun",
+                                             label: "Loading...")
+                            }
+                            
+                            // Humidity
+                            if let hu = locHumidity {
+                                variableTile(icon: "humidity.fill",
+                                             title: "Humidity",
+                                             label: labelHumidity(hu))
+                            } else {
+                                variableTile(icon: "humidity.fill",
+                                             title: "Humidity",
+                                             label: "Loading...")
+                            }
+                            
+                            // Air Quality
+                            if let a = locAod {
+                                variableTile(icon: "aqi.medium",
+                                             title: "Air Quality",
+                                             label: labelAOD(a))
+                            } else {
+                                variableTile(icon: "aqi.medium",
+                                             title: "Air Quality",
+                                             label: "Loading...")
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(16)
+                    
+                    // Forecast
+                    if locationForecast.count > 1 {
+                        VStack(spacing: 12) {
+                            Text("5-Day Forecast")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            ForEach(locationForecast) { d in
+                                HStack {
+                                    Text(d.weekday)
+                                        .frame(width: 40, alignment: .leading)
+                                        .foregroundColor(.white)
+                                    Image(systemName: "cloud.fill")
+                                        .foregroundColor(.white)
+                                    GeometryReader { geo in
+                                        let frac = CGFloat(d.score) / 100
+                                        ZStack(alignment: .leading) {
+                                            Capsule()
+                                                .fill(Color.white.opacity(0.3))
+                                                .frame(height: 6)
+                                            Capsule()
+                                                .fill(Color.white)
+                                                .frame(width: geo.size.width * frac,
+                                                       height: 6)
+                                        }
+                                    }
+                                    .frame(height: 6)
+                                    Text("\(d.score)%")
+                                        .frame(width: 40, alignment: .trailing)
+                                        .foregroundColor(.white)
+                                }
+                                .frame(height: 28)
+                            }
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(16)
+                    }
+                }
+            }
+            .padding()
+            .onAppear {
+                Task {
+                    isLoadingData = true
+                    do {
+                        // Load data for this favorite location
+                        let coord = CLLocationCoordinate2D(
+                            latitude: location.latitude,
+                            longitude: location.longitude
+                        )
+                        
+                        let resp = try await sunsetService.fetchData(
+                            for: Date(),
+                            lat: coord.latitude,
+                            lon: coord.longitude
+                        )
+                        
+                        // Process data similar to loadData method
+                        let dayFmt = DateFormatter()
+                        dayFmt.dateFormat = "yyyy-MM-dd"
+                        var list: [DailyForecast] = []
+                        
+                        for i in resp.daily.time.indices {
+                            guard let d = dayFmt.date(from: resp.daily.time[i]) else { continue }
+                            let wd = d.formatted(.dateTime.weekday(.abbreviated))
+                            let sc: Int
+                            if i == 0, let idx = indexFor(resp.daily.sunset[i], in: resp.hourly.time) {
+                                let hi = resp.hourly.cloudcover_high[idx]
+                                let mi = resp.hourly.cloudcover_mid[idx]
+                                let lo = resp.hourly.cloudcover_low[idx]
+                                let totalCloud = resp.hourly.cloudcover[idx]
+                                
+                                let weightedCloud = (0.4 * hi) + (0.0 * mi) - (0.3 * lo)
+                                sc = 50 + Int(weightedCloud.clamped(to: -50...50))
+                                
+                                locCloudAtSun = totalCloud
+                                locHumidity = resp.hourly.relativehumidity_2m[idx]
+                            } else {
+                                sc = max(0, 100 - Int(resp.daily.cloudcover_mean[i]))
+                            }
+                            list.append(DailyForecast(id: d, weekday: wd, score: sc))
+                        }
+                        
+                        // Set times
+                        let sunFmt = DateFormatter()
+                        sunFmt.dateFormat = "yyyy-MM-dd'T'HH:mm"
+                        if let sunD = sunFmt.date(from: resp.daily.sunset[0]) {
+                            locSunsetMoment = sunD
+                            locGoldenMoment = sunD.addingTimeInterval(-1800)
+                        }
+                        locCloudMean = resp.daily.cloudcover_mean[0]
+                        
+                        // Try to get air quality data
+                        do {
+                            let aqResp = try await AirQualityService.shared.fetchData(
+                                for: Date(), 
+                                lat: coord.latitude, 
+                                lon: coord.longitude
+                            )
+                            
+                            if let sunsetTime = resp.daily.sunset.first {
+                                locAod = AirQualityService.shared.findAODForTime(
+                                    timestamp: sunsetTime,
+                                    in: aqResp
+                                )
+                                
+                                // Apply clarity adjustments
+                                if let idx = list.indices.first, let firstDay = list.first, let aod = locAod {
+                                    let clarityScore = AirQualityService.shared.calculateClarityScore(
+                                        aod: aod, 
+                                        dust: nil, 
+                                        pm25: nil
+                                    )
+                                    
+                                    let finalScore = Int(0.7 * Double(firstDay.score) + 0.3 * Double(clarityScore))
+                                    let clampedScore = max(0, min(100, finalScore))
+                                    
+                                    list[idx] = DailyForecast(
+                                        id: firstDay.id, 
+                                        weekday: firstDay.weekday, 
+                                        score: clampedScore
+                                    )
+                                }
+                            }
+                        } catch {
+                            print("[FavoriteView] Air quality error for \(location.displayName):", error)
+                        }
+                        
+                        // Update UI
+                        locationForecast = list
+                        locationError = nil
+                        
+                    } catch {
+                        print("[FavoriteView] Error loading data for \(location.displayName):", error)
+                        locationError = error.localizedDescription
+                    }
+                    
+                    isLoadingData = false
+                }
+            }
+        }
+    }
+    
+    // Helper functions
+    
+    private func indexFor(_ isoSun: String, in hours: [String]) -> Int? {
+        let parts = isoSun.split(separator: "T")
+        guard parts.count == 2 else { return nil }
+        let lookup = "\(parts[0])T\(parts[1].split(separator: ":")[0]):"
+        return hours.firstIndex { $0.hasPrefix(lookup) }
+    }
+    
+    private func labelCloudMean(_ v: Double) -> String {
+        v < 20 ? "Clear" :
+        v < 60 ? "Partly" :
+               "Overcast"
+    }
+    
+    private func labelHumidity(_ v: Double) -> String {
+        v < 40 ? "Dry" :
+        v < 70 ? "OK" :
+               "Humid"
+    }
+    
+    private func labelAOD(_ v: Double) -> String {
+        v < 0.1 ? "Low" :
+        v < 0.3 ? "Mod" :
+               "High"
+    }
+    
+    private func variableTile(icon: String, title: String, label: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(.white)
+                    .frame(width: 20)
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            Text(label)
+                .font(.headline)
+                .foregroundColor(.white)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
     }
 }
 
