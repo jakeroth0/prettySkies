@@ -19,6 +19,8 @@
 		D20632292DCEAC6200E70260 /* ForecastCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20632242DCEAC6200E70260 /* ForecastCard.swift */; };
 		D206322A2DCEAC6200E70260 /* TodayConditionsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20632252DCEAC6200E70260 /* TodayConditionsCard.swift */; };
 		D206322C2DCEAC8000E70260 /* DailyForecast.swift in Sources */ = {isa = PBXBuildFile; fileRef = D206322B2DCEAC8000E70260 /* DailyForecast.swift */; };
+		D206322E2DCF955E00E70260 /* GradientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D206322D2DCF955E00E70260 /* GradientBackground.swift */; };
+		D20632302DCF973B00E70260 /* GradientHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D206322F2DCF973B00E70260 /* GradientHelper.swift */; };
 		D2591DD62DC6AFCF002221D1 /* ForecastResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2591DD52DC6AFCF002221D1 /* ForecastResponse.swift */; };
 		D2591DD82DC6BB97002221D1 /* AQResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2591DD72DC6BB97002221D1 /* AQResponse.swift */; };
 		D28636C22DC6C5C500EE42FB /* Comparable+Clamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D28636C12DC6C5C500EE42FB /* Comparable+Clamp.swift */; };
@@ -51,6 +53,8 @@
 		D20632252DCEAC6200E70260 /* TodayConditionsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayConditionsCard.swift; sourceTree = "<group>"; };
 		D20632272DCEAC6200E70260 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		D206322B2DCEAC8000E70260 /* DailyForecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyForecast.swift; sourceTree = "<group>"; };
+		D206322D2DCF955E00E70260 /* GradientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientBackground.swift; sourceTree = "<group>"; };
+		D206322F2DCF973B00E70260 /* GradientHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientHelper.swift; sourceTree = "<group>"; };
 		D2591DD52DC6AFCF002221D1 /* ForecastResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastResponse.swift; sourceTree = "<group>"; };
 		D2591DD72DC6BB97002221D1 /* AQResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AQResponse.swift; sourceTree = "<group>"; };
 		D28636C12DC6C5C500EE42FB /* Comparable+Clamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparable+Clamp.swift"; sourceTree = "<group>"; };
@@ -164,6 +168,7 @@
 			children = (
 				D20632242DCEAC6200E70260 /* ForecastCard.swift */,
 				D20632252DCEAC6200E70260 /* TodayConditionsCard.swift */,
+				D206322D2DCF955E00E70260 /* GradientBackground.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -182,6 +187,7 @@
 				D29706412DC3022A006094B0 /* Color+Hex.swift */,
 				D28636C12DC6C5C500EE42FB /* Comparable+Clamp.swift */,
 				D20632092DC7E4FD00E70260 /* Environment.swift */,
+				D206322F2DCF973B00E70260 /* GradientHelper.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -264,6 +270,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D29706432DC3022A006094B0 /* Color+Hex.swift in Sources */,
+				D20632302DCF973B00E70260 /* GradientHelper.swift in Sources */,
 				D20632162DC8513700E70260 /* FullscreenFavoritesView.swift in Sources */,
 				D206322C2DCEAC8000E70260 /* DailyForecast.swift in Sources */,
 				D2CD90212DBDAFBA00645F4C /* ContentView.swift in Sources */,
@@ -280,6 +287,7 @@
 				D2C6F9EB2DBD9076004865E6 /* LocationManager.swift in Sources */,
 				1A1A1A1A1A1A1A1A1A1A1A1A /* SunsetForecastApp.swift in Sources */,
 				D29706382DC2F6CE006094B0 /* LocationSearchService.swift in Sources */,
+				D206322E2DCF955E00E70260 /* GradientBackground.swift in Sources */,
 				D2591DD82DC6BB97002221D1 /* AQResponse.swift in Sources */,
 				D29706392DC2F6CE006094B0 /* OpenMeteoSearchService.swift in Sources */,
 				D297063A2DC2F6CE006094B0 /* FavoritesStore.swift in Sources */,
