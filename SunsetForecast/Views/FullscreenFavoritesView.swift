@@ -25,9 +25,9 @@ struct FullscreenFavoritesView: View {
                 // Background gradient - using sunset colors
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#FF6B5C"),
-                        Color(hex: "#FFB35C"),
-                        Color(hex: "#FFD56B")
+                        Color("#FF6B5C"),
+                        Color("#FFB35C"),
+                        Color("#FFD56B")
                     ]),
                     startPoint: .top,
                     endPoint: .bottom

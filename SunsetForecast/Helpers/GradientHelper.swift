@@ -2,46 +2,40 @@ import SwiftUI
 
 /// Provides dynamic gradient color stops based on sunset score
 struct GradientHelper {
-    /// Returns an array of three Color stops for the given sunset score.
-    /// - Parameter score: The sunset score (0-100, or nil for default)
-    /// - Returns: Array of three Color stops for the gradient
+    /// Default sunset colors if no score is available
+    static let defaultGradient = [
+        Color("#FF7E5F"), // top
+        Color("#FEB47B"), // middle
+        Color("#FFB35C")  // bottom
+    ]
+    
+    /// Returns a gradient color scheme based on the provided sunset score
     static func gradientColorsForScore(_ score: Int?) -> [Color] {
-        guard let score = score else {
-            // Default: Good range
+        guard let score = score else { return defaultGradient }
+        
+        if score >= 80 {
             return [
-                Color(hex: "#FF7E5F"), // top
-                Color(hex: "#FEB47B"), // middle
-                Color(hex: "#FFB35C")  // bottom
+                Color("#FF5E3A"), // top
+                Color("#FF2A68"), // middle
+                Color("#FF6B5C")  // bottom
             ]
-        }
-        switch score {
-        case 80...:
-            // Excellent: Fiery, saturated
+        } else if score >= 60 {
             return [
-                Color(hex: "#FF5E3A"), // top
-                Color(hex: "#FF2A68"), // middle
-                Color(hex: "#FF6B5C")  // bottom
+                Color("#FF7E5F"), // top
+                Color("#FEB47B"), // middle
+                Color("#FFB35C")  // bottom
             ]
-        case 50...79:
-            // Good: Warm pinks/oranges
+        } else if score >= 40 {
             return [
-                Color(hex: "#FF7E5F"), // top
-                Color(hex: "#FEB47B"), // middle
-                Color(hex: "#FFB35C")  // bottom
+                Color("#FFD194"), // top
+                Color("#D1913C"), // middle
+                Color("#E0C3FC")  // bottom
             ]
-        case 1...49:
-            // Mediocre: Gentle pastels
+        } else {
             return [
-                Color(hex: "#FFD194"), // top
-                Color(hex: "#D1913C"), // middle
-                Color(hex: "#E0C3FC")  // bottom
-            ]
-        default:
-            // Poor (0 or negative): Muted grays
-            return [
-                Color(hex: "#6E6E6E"), // top
-                Color(hex: "#9E9E9E"), // middle
-                Color(hex: "#BDBDBD")  // bottom
+                Color("#6E6E6E"), // top
+                Color("#9E9E9E"), // middle
+                Color("#BDBDBD")  // bottom
             ]
         }
     }

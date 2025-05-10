@@ -183,25 +183,21 @@ struct FavoritesView: View {
                                         ForEach(searchVM.searchResults, id: \.id) { location in
                                             SearchResultRow(location: location) {
                                                 Task {
-                                                    do {
-                                                        // Get the full location details
-                                                        let loc = await searchVM.selectLocation(location)
-                                                        print("[FavoritesView] Selected search result: \(loc.displayName)")
-                                                        
-                                                        // Clear search UI
-                                                        isSearchFieldFocused = false
-                                                        searchVM.searchText = ""
-                                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                                            isSearchActive = false
-                                                        }
-                                                        
-                                                        // Slight delay to ensure UI transitions finish
-                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                                            // Navigate to the preview view
-                                                            navigationPath.append(SearchLocationPreview(location: loc))
-                                                        }
-                                                    } catch {
-                                                        print("[FavoritesView] Error loading search result details: \(error)")
+                                                    // Get the full location details
+                                                    let loc = await searchVM.selectLocation(location)
+                                                    print("[FavoritesView] Selected search result: \(loc.displayName)")
+                                                    
+                                                    // Clear search UI
+                                                    isSearchFieldFocused = false
+                                                    searchVM.searchText = ""
+                                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                                        isSearchActive = false
+                                                    }
+                                                    
+                                                    // Slight delay to ensure UI transitions finish
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                        // Navigate to the preview view
+                                                        navigationPath.append(SearchLocationPreview(location: loc))
                                                     }
                                                 }
                                             }

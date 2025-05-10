@@ -34,8 +34,17 @@ struct HomeView: View {
                 if tabSelection.selectedTab == .home {
                     // Home / Details View
                     ZStack {
-                        // Dynamic gradient based on selected page's score
-                        GradientBackground(score: selectedPageScore)
+                        // Background gradient
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color("#FF6B5C"),
+                                Color("#FFB35C"),
+                                Color("#FFD56B")
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea()
 
                         // Conditionally show content or loading spinner
                         if let coord = locationManager.coordinate, coord.latitude != 0.0, coord.longitude != 0.0 {
@@ -309,14 +318,5 @@ struct HomeView: View {
         guard parts.count == 2 else { return nil }
         let lookup = "\(parts[0])T\(parts[1].split(separator: ":")[0]):"
         return hours.firstIndex { $0.hasPrefix(lookup) }
-    }
-
-    var selectedPageScore: Int? {
-        if tabSelection.homePageIndex == 0 {
-            return forecasts.first?.score
-        } else if tabSelection.homePageIndex > 0, tabSelection.homePageIndex - 1 < favoritesStore.favorites.count {
-            return favoritesStore.favorites[tabSelection.homePageIndex - 1].latestScore
-        }
-        return nil
     }
 }
