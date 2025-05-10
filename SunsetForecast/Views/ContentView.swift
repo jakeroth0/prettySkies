@@ -1,8 +1,10 @@
 // SunsetForecast/Views/ContentView.swift
+// DEPRECATED: This view has been replaced by HomeView.swift
 
 import SwiftUI
 import CoreLocation
 
+@available(*, deprecated, message: "This view is deprecated. Use HomeView instead.")
 struct ContentView: View {
     // MARK: – State & Services
 
