@@ -53,10 +53,15 @@ struct LocationPreview: View {
                     todayScoreView
                     
                     // Today's Conditions
-                    variableCardView
+                    TodayConditionsCard(
+                        cloudMean: todayCloudMean,
+                        cloudAtSun: todayCloudAtSun,
+                        humidity: todayHumidity,
+                        aod: todayAod
+                    )
                     
                     // 10-day Forecast
-                    forecastCardView
+                    ForecastCard(forecasts: forecasts)
                 }
                 .padding()
             }
@@ -91,16 +96,10 @@ struct LocationPreview: View {
             // Add button
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Add") {
-                    // Check if we've already reached the limit of 10 favorites
-                    if favoritesStore.favorites.count < 10 {
-                        favoritesStore.add(location)
-                        dismiss()
-                    } else {
-                        errorMessage = "You can only save up to 10 favorite locations"
-                    }
+                    favoritesStore.add(location)
+                    dismiss()
                 }
                 .foregroundColor(.white)
-                .disabled(isLoading)
             }
         }
         .task {
@@ -128,121 +127,6 @@ struct LocationPreview: View {
                 .foregroundColor(.white.opacity(0.8))
             }
         }
-    }
-    
-    // MARK: - Variables Card
-    
-    private var variableCardView: some View {
-        VStack(spacing: 12) {
-            Text("Today's Conditions")
-                .font(.headline)
-                .foregroundColor(.white)
-            
-            LazyVGrid(columns: [GridItem(), GridItem()]) {
-                // Cloud Mean
-                if let cm = todayCloudMean {
-                    variableTile(icon: "cloud.fill",
-                                 title: "Clouds (mean)",
-                                 label: labelCloudMean(cm))
-                } else {
-                    variableTile(icon: "cloud.fill",
-                                 title: "Clouds (mean)",
-                                 label: "Loading...")
-                }
-                
-                // Cloud at Sunset
-                if let cu = todayCloudAtSun {
-                    variableTile(icon: "cloud.sun.fill",
-                                 title: "Cloud @ Sun",
-                                 label: "\(Int(cu))%")
-                } else {
-                    variableTile(icon: "cloud.sun.fill",
-                                 title: "Cloud @ Sun",
-                                 label: "Loading...")
-                }
-                
-                // Humidity
-                if let hu = todayHumidity {
-                    variableTile(icon: "humidity.fill",
-                                 title: "Humidity",
-                                 label: labelHumidity(hu))
-                } else {
-                    variableTile(icon: "humidity.fill",
-                                 title: "Humidity",
-                                 label: "Loading...")
-                }
-                
-                // AOD
-                if let ao = todayAod {
-                    variableTile(icon: "sun.haze.fill",
-                                 title: "AOD",
-                                 label: labelAOD(ao))
-                } else {
-                    variableTile(icon: "sun.haze.fill",
-                                 title: "AOD",
-                                 label: "Loading...")
-                }
-            }
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(12)
-    }
-    
-    private func variableTile(icon: String,
-                              title: String,
-                              label: String) -> some View {
-        VStack {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.white)
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.white)
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
-        }
-        .frame(maxWidth: .infinity, minHeight: 80)
-    }
-    
-    // MARK: - Forecast Card
-    
-    private var forecastCardView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("10-Day Forecast", systemImage: "calendar")
-                .font(.headline)
-                .foregroundColor(.white)
-            ForEach(forecasts) { d in
-                HStack(spacing: 12) {
-                    Text(d.weekday)
-                        .frame(width: 40, alignment: .leading)
-                        .foregroundColor(.white)
-                    Image(systemName: "cloud.fill")
-                        .foregroundColor(.white)
-                    GeometryReader { geo in
-                        let frac = CGFloat(d.score) / 100
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.white.opacity(0.3))
-                                .frame(height: 6)
-                            Capsule()
-                                .fill(Color.white)
-                                .frame(width: geo.size.width * frac,
-                                       height: 6)
-                        }
-                    }
-                    .frame(height: 6)
-                    Text("\(d.score)%")
-                        .frame(width: 40, alignment: .trailing)
-                        .foregroundColor(.white)
-                }
-                .frame(height: 28)
-            }
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(16)
     }
     
     // MARK: - Data Loading
@@ -325,9 +209,11 @@ struct LocationPreview: View {
                     )
                     dustValue = fallback.dust
                     pm25Value = fallback.pm25
+                    
+                    print("[Data] AOD=\(String(describing: aodValue)), dust=\(String(describing: dustValue)), pm25=\(String(describing: pm25Value))")
                 }
             } catch {
-                print("[LocationPreview] Air quality error:", error)
+                print("[Data] Air quality error:", error)
                 // Continue without air quality data
             }
             
@@ -350,6 +236,8 @@ struct LocationPreview: View {
                     weekday: firstDay.weekday,
                     score: clampedScore
                 )
+                
+                print("[Data] Cloud score=\(firstDay.score), clarity=\(clarityScore), final=\(clampedScore)")
             }
             
             // Store AOD value
@@ -359,10 +247,10 @@ struct LocationPreview: View {
             await MainActor.run {
                 forecasts = list
                 errorMessage = nil
-                print("[LocationPreview] built \(list.count) days forecast for \(location.displayName)")
+                print("[Data] built \(list.count) days")
             }
         } catch {
-            print("[LocationPreview] error:", error)
+            print("[Data] error:", error)
             await MainActor.run { errorMessage = error.localizedDescription }
         }
     }
@@ -370,29 +258,8 @@ struct LocationPreview: View {
     private func indexFor(_ isoSun: String, in hours: [String]) -> Int? {
         let parts = isoSun.split(separator: "T")
         guard parts.count == 2 else { return nil }
-        let hourPrefix = parts[1].split(separator: ":")[0]
-        let lookup = "\(parts[0])T\(hourPrefix):"
+        let lookup = "\(parts[0])T\(parts[1].split(separator: ":")[0]):"
         return hours.firstIndex { $0.hasPrefix(lookup) }
-    }
-    
-    // MARK: - Label Helpers
-    
-    private func labelCloudMean(_ v: Double) -> String {
-        v < 20   ? "Clear" :
-        v < 60   ? "Partly" :
-                   "Overcast"
-    }
-    
-    private func labelHumidity(_ v: Double) -> String {
-        v < 40  ? "Dry" :
-        v < 70  ? "OK" :
-                  "Humid"
-    }
-    
-    private func labelAOD(_ v: Double) -> String {
-        v < 0.1  ? "Low" :
-        v < 0.3  ? "Mod" :
-                   "High"
     }
 }
 
