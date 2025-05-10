@@ -1,15 +1,10 @@
 // SunsetForecast/Views/ContentView.swift
+// DEPRECATED: This view has been replaced by HomeView.swift
 
 import SwiftUI
 import CoreLocation
 
-// Simple model for each day's score
-struct DailyForecast: Identifiable {
-    let id:      Date
-    let weekday: String
-    let score:   Int
-}
-
+@available(*, deprecated, message: "This view is deprecated. Use HomeView instead.")
 struct ContentView: View {
     // MARK: – State & Services
 
@@ -18,7 +13,7 @@ struct ContentView: View {
     private let sunsetService = SunsetService.shared
 
     @State private var locationName: String?
-    @State private var forecasts:    [DailyForecast] = []
+    @State private var forecasts: [SunsetForecast.DailyForecast] = []
 
     // Today's detailed values
     @State private var todayCloudMean: Double?
@@ -61,7 +56,12 @@ struct ContentView: View {
                                     VStack(spacing: 24) {
                                         headerView
                                         todayScoreView
-                                        variableCardView
+                                        TodayConditionsCard(
+                                            cloudMean: todayCloudMean,
+                                            cloudAtSun: todayCloudAtSun,
+                                            humidity: todayHumidity,
+                                            aod: todayAod
+                                        )
                                         forecastCardView
                                     }
                                     .padding()
@@ -172,119 +172,15 @@ struct ContentView: View {
         }
     }
 
-    // MARK: – Today's Conditions Grid
-
-    private var variableCardView: some View {
-        VStack(spacing: 12) {
-            Text("Today's Conditions")
-                .font(.headline)
-                .foregroundColor(.white)
-            
-            LazyVGrid(columns: [GridItem(), GridItem()]) {
-                // Cloud Mean
-                if let cm = todayCloudMean {
-                    variableTile(icon: "cloud.fill",
-                                 title: "Clouds (mean)",
-                                 label: labelCloudMean(cm))
-                } else {
-                    variableTile(icon: "cloud.fill",
-                                 title: "Clouds (mean)",
-                                 label: "Loading...")
-                }
-                
-                // Cloud at Sunset
-                if let cu = todayCloudAtSun {
-                    variableTile(icon: "cloud.sun.fill",
-                                 title: "Cloud @ Sun",
-                                 label: "\(Int(cu))%")
-                } else {
-                    variableTile(icon: "cloud.sun.fill",
-                                 title: "Cloud @ Sun",
-                                 label: "Loading...")
-                }
-                
-                // Humidity
-                if let hu = todayHumidity {
-                    variableTile(icon: "humidity.fill",
-                                 title: "Humidity",
-                                 label: labelHumidity(hu))
-                } else {
-                    variableTile(icon: "humidity.fill",
-                                 title: "Humidity",
-                                 label: "Loading...")
-                }
-                
-                // AOD
-                if let ao = todayAod {
-                    variableTile(icon: "sun.haze.fill",
-                                 title: "AOD",
-                                 label: labelAOD(ao))
-                } else {
-                    variableTile(icon: "sun.haze.fill",
-                                 title: "AOD",
-                                 label: "Loading...")
-                }
-            }
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(12)
-    }
-
-    private func variableTile(icon: String,
-                              title: String,
-                              label: String) -> some View {
-        VStack {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.white)
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.white)
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
-        }
-        .frame(maxWidth: .infinity, minHeight: 80)
-    }
-
     // MARK: – 10-Day Forecast Card
 
     private var forecastCardView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("10-Day Forecast", systemImage: "calendar")
-                .font(.headline)
-                .foregroundColor(.white)
-            ForEach(forecasts) { d in
-                HStack(spacing: 12) {
-                    Text(d.weekday)
-                        .frame(width: 40, alignment: .leading)
-                        .foregroundColor(.white)
-                    Image(systemName: "cloud.fill")
-                        .foregroundColor(.white)
-                    GeometryReader { geo in
-                        let frac = CGFloat(d.score) / 100
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.white.opacity(0.3))
-                                .frame(height: 6)
-                            Capsule()
-                                .fill(Color.white)
-                                .frame(width: geo.size.width * frac,
-                                       height: 6)
-                        }
-                    }
-                    .frame(height: 6)
-                    Text("\(d.score)%")
-                        .frame(width: 40, alignment: .trailing)
-                        .foregroundColor(.white)
-                }
-                .frame(height: 28)
-            }
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(16)
+        // MARK: – 10-Day Forecast
+        
+        // Use our new ForecastCard component
+        ForecastCard(forecasts: forecasts)
+        
+        // Footer
     }
 
     // MARK: – Networking & Data
@@ -319,7 +215,7 @@ struct ContentView: View {
             // build forecast list
             let dayFmt = DateFormatter()
             dayFmt.dateFormat = "yyyy-MM-dd"
-            var list: [DailyForecast] = []
+            var list: [SunsetForecast.DailyForecast] = []
 
             for i in resp.daily.time.indices {
                 guard let d = dayFmt.date(from: resp.daily.time[i]) else { continue }
@@ -344,7 +240,7 @@ struct ContentView: View {
                     // For future days, use cloudcover_mean but invert (higher score = better)
                     sc = max(0, 100 - Int(resp.daily.cloudcover_mean[i]))
                 }
-                list.append(DailyForecast(id: d, weekday: wd, score: sc))
+                list.append(SunsetForecast.DailyForecast(id: d, weekday: wd, score: sc))
             }
 
             // today's times & mean
@@ -404,7 +300,7 @@ struct ContentView: View {
                 let clampedScore = max(0, min(100, finalScore))
                 
                 // Update first day with adjusted score
-                list[idx] = DailyForecast(
+                list[idx] = SunsetForecast.DailyForecast(
                     id: firstDay.id, 
                     weekday: firstDay.weekday, 
                     score: clampedScore
@@ -459,7 +355,7 @@ struct ContentView: View {
     // MARK: - Favorite Location View
     
     private func favoriteLocationView(for location: Location) -> some View {
-        @State var locationForecast: [DailyForecast] = []
+        @State var locationForecast: [SunsetForecast.DailyForecast] = []
         @State var locCloudMean: Double?
         @State var locCloudAtSun: Double?
         @State var locAod: Double?
@@ -509,97 +405,21 @@ struct ContentView: View {
                 
                 // Conditions grid (reuse variable card layout)
                 if !locationForecast.isEmpty {
-                    VStack(spacing: 12) {
-                        Text("Today's Conditions")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        
-                        LazyVGrid(columns: [GridItem(), GridItem()]) {
-                            // Cloud Mean
-                            if let cm = locCloudMean {
-                                variableTile(icon: "cloud.fill",
-                                             title: "Clouds (mean)",
-                                             label: labelCloudMean(cm))
-                            } else {
-                                variableTile(icon: "cloud.fill",
-                                             title: "Clouds (mean)",
-                                             label: "Loading...")
-                            }
-                            
-                            // Cloud at Sunset
-                            if let cu = locCloudAtSun {
-                                variableTile(icon: "cloud.sun.fill",
-                                             title: "Cloud @ Sun",
-                                             label: "\(Int(cu))%")
-                            } else {
-                                variableTile(icon: "cloud.sun.fill",
-                                             title: "Cloud @ Sun",
-                                             label: "Loading...")
-                            }
-                            
-                            // Humidity
-                            if let hu = locHumidity {
-                                variableTile(icon: "humidity.fill",
-                                             title: "Humidity",
-                                             label: labelHumidity(hu))
-                            } else {
-                                variableTile(icon: "humidity.fill",
-                                             title: "Humidity",
-                                             label: "Loading...")
-                            }
-                            
-                            // Air Quality
-                            if let a = locAod {
-                                variableTile(icon: "aqi.medium",
-                                             title: "Air Quality",
-                                             label: labelAOD(a))
-                            } else {
-                                variableTile(icon: "aqi.medium",
-                                             title: "Air Quality",
-                                             label: "Loading...")
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(16)
+                    // Use our TodayConditionsCard component
+                    TodayConditionsCard(
+                        cloudMean: locCloudMean,
+                        cloudAtSun: locCloudAtSun,
+                        humidity: locHumidity,
+                        aod: locAod
+                    )
                     
                     // Forecast
                     if locationForecast.count > 1 {
-                        VStack(spacing: 12) {
-                            Text("5-Day Forecast")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            ForEach(locationForecast) { d in
-                                HStack {
-                                    Text(d.weekday)
-                                        .frame(width: 40, alignment: .leading)
-                                        .foregroundColor(.white)
-                                    Image(systemName: "cloud.fill")
-                                        .foregroundColor(.white)
-                                    GeometryReader { geo in
-                                        let frac = CGFloat(d.score) / 100
-                                        ZStack(alignment: .leading) {
-                                            Capsule()
-                                                .fill(Color.white.opacity(0.3))
-                                                .frame(height: 6)
-                                            Capsule()
-                                                .fill(Color.white)
-                                                .frame(width: geo.size.width * frac,
-                                                       height: 6)
-                                        }
-                                    }
-                                    .frame(height: 6)
-                                    Text("\(d.score)%")
-                                        .frame(width: 40, alignment: .trailing)
-                                        .foregroundColor(.white)
-                                }
-                                .frame(height: 28)
-                            }
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(16)
+                        // Use our ForecastCard component
+                        ForecastCard(
+                            forecasts: locationForecast,
+                            title: "5-Day Forecast"
+                        )
                     }
                 }
             }
@@ -623,7 +443,7 @@ struct ContentView: View {
                         // Process data similar to loadData method
                         let dayFmt = DateFormatter()
                         dayFmt.dateFormat = "yyyy-MM-dd"
-                        var list: [DailyForecast] = []
+                        var list: [SunsetForecast.DailyForecast] = []
                         
                         for i in resp.daily.time.indices {
                             guard let d = dayFmt.date(from: resp.daily.time[i]) else { continue }
@@ -643,7 +463,7 @@ struct ContentView: View {
                             } else {
                                 sc = max(0, 100 - Int(resp.daily.cloudcover_mean[i]))
                             }
-                            list.append(DailyForecast(id: d, weekday: wd, score: sc))
+                            list.append(SunsetForecast.DailyForecast(id: d, weekday: wd, score: sc))
                         }
                         
                         // Set times
@@ -680,7 +500,7 @@ struct ContentView: View {
                                     let finalScore = Int(0.7 * Double(firstDay.score) + 0.3 * Double(clarityScore))
                                     let clampedScore = max(0, min(100, finalScore))
                                     
-                                    list[idx] = DailyForecast(
+                                    list[idx] = SunsetForecast.DailyForecast(
                                         id: firstDay.id, 
                                         weekday: firstDay.weekday, 
                                         score: clampedScore
@@ -715,7 +535,7 @@ struct FavoriteLocationView: View {
     let location: Location
     private let sunsetService = SunsetService.shared
     
-    @State private var locationForecast: [DailyForecast] = []
+    @State private var locationForecast: [SunsetForecast.DailyForecast] = []
     @State private var locCloudMean: Double?
     @State private var locCloudAtSun: Double?
     @State private var locAod: Double?
@@ -766,97 +586,21 @@ struct FavoriteLocationView: View {
                 
                 // Conditions grid (reuse variable card layout)
                 if !locationForecast.isEmpty {
-                    VStack(spacing: 12) {
-                        Text("Today's Conditions")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        
-                        LazyVGrid(columns: [GridItem(), GridItem()]) {
-                            // Cloud Mean
-                            if let cm = locCloudMean {
-                                variableTile(icon: "cloud.fill",
-                                             title: "Clouds (mean)",
-                                             label: labelCloudMean(cm))
-                            } else {
-                                variableTile(icon: "cloud.fill",
-                                             title: "Clouds (mean)",
-                                             label: "Loading...")
-                            }
-                            
-                            // Cloud at Sunset
-                            if let cu = locCloudAtSun {
-                                variableTile(icon: "cloud.sun.fill",
-                                             title: "Cloud @ Sun",
-                                             label: "\(Int(cu))%")
-                            } else {
-                                variableTile(icon: "cloud.sun.fill",
-                                             title: "Cloud @ Sun",
-                                             label: "Loading...")
-                            }
-                            
-                            // Humidity
-                            if let hu = locHumidity {
-                                variableTile(icon: "humidity.fill",
-                                             title: "Humidity",
-                                             label: labelHumidity(hu))
-                            } else {
-                                variableTile(icon: "humidity.fill",
-                                             title: "Humidity",
-                                             label: "Loading...")
-                            }
-                            
-                            // Air Quality
-                            if let a = locAod {
-                                variableTile(icon: "aqi.medium",
-                                             title: "Air Quality",
-                                             label: labelAOD(a))
-                            } else {
-                                variableTile(icon: "aqi.medium",
-                                             title: "Air Quality",
-                                             label: "Loading...")
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(16)
+                    // Use our TodayConditionsCard component
+                    TodayConditionsCard(
+                        cloudMean: locCloudMean,
+                        cloudAtSun: locCloudAtSun,
+                        humidity: locHumidity,
+                        aod: locAod
+                    )
                     
                     // Forecast
                     if locationForecast.count > 1 {
-                        VStack(spacing: 12) {
-                            Text("5-Day Forecast")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            ForEach(locationForecast) { d in
-                                HStack {
-                                    Text(d.weekday)
-                                        .frame(width: 40, alignment: .leading)
-                                        .foregroundColor(.white)
-                                    Image(systemName: "cloud.fill")
-                                        .foregroundColor(.white)
-                                    GeometryReader { geo in
-                                        let frac = CGFloat(d.score) / 100
-                                        ZStack(alignment: .leading) {
-                                            Capsule()
-                                                .fill(Color.white.opacity(0.3))
-                                                .frame(height: 6)
-                                            Capsule()
-                                                .fill(Color.white)
-                                                .frame(width: geo.size.width * frac,
-                                                       height: 6)
-                                        }
-                                    }
-                                    .frame(height: 6)
-                                    Text("\(d.score)%")
-                                        .frame(width: 40, alignment: .trailing)
-                                        .foregroundColor(.white)
-                                }
-                                .frame(height: 28)
-                            }
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(16)
+                        // Use our ForecastCard component
+                        ForecastCard(
+                            forecasts: locationForecast,
+                            title: "5-Day Forecast"
+                        )
                     }
                 }
             }
@@ -880,7 +624,7 @@ struct FavoriteLocationView: View {
                         // Process data similar to loadData method
                         let dayFmt = DateFormatter()
                         dayFmt.dateFormat = "yyyy-MM-dd"
-                        var list: [DailyForecast] = []
+                        var list: [SunsetForecast.DailyForecast] = []
                         
                         for i in resp.daily.time.indices {
                             guard let d = dayFmt.date(from: resp.daily.time[i]) else { continue }
@@ -900,7 +644,7 @@ struct FavoriteLocationView: View {
                             } else {
                                 sc = max(0, 100 - Int(resp.daily.cloudcover_mean[i]))
                             }
-                            list.append(DailyForecast(id: d, weekday: wd, score: sc))
+                            list.append(SunsetForecast.DailyForecast(id: d, weekday: wd, score: sc))
                         }
                         
                         // Set times
@@ -937,7 +681,7 @@ struct FavoriteLocationView: View {
                                     let finalScore = Int(0.7 * Double(firstDay.score) + 0.3 * Double(clarityScore))
                                     let clampedScore = max(0, min(100, finalScore))
                                     
-                                    list[idx] = DailyForecast(
+                                    list[idx] = SunsetForecast.DailyForecast(
                                         id: firstDay.id, 
                                         weekday: firstDay.weekday, 
                                         score: clampedScore
