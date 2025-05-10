@@ -6,7 +6,7 @@ import Combine
 /// Holds your saved locations and persists them via UserDefaults
 final class FavoritesStore: ObservableObject {
     @Published private(set) var favorites: [Location] = []
-    
+
     // Maximum number of favorites allowed
     static let maxFavorites = 10
 
